@@ -11,6 +11,7 @@ export interface FurnitureItem {
   color: string;
   accentColor?: string;
   pattern?: string;
+  theme?: string;
   originalPrice?: number;
   isFromInventory?: boolean;
   isWalkable: boolean;

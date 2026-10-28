@@ -1006,6 +1006,45 @@
       color: #ffffff;
       box-shadow: 0 4px 12px rgba(232, 93, 4, 0.4);
     }
+    .theme-tab {
+      flex-shrink: 0;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: #94a3b8;
+      font-family: inherit;
+      font-size: 0.76rem;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 8px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.15s ease;
+    }
+    .theme-tab:hover {
+      background: rgba(255, 255, 255, 0.16);
+      color: #ffffff;
+    }
+    .theme-tab.active {
+      background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+      border-color: #60a5fa;
+      color: #ffffff;
+      box-shadow: 0 2px 8px rgba(59, 130, 246, 0.4);
+    }
+    .item-theme-tag {
+      font-size: 0.65rem;
+      font-weight: 800;
+      color: #38bdf8;
+      background: rgba(56, 189, 248, 0.12);
+      border-radius: 4px;
+      padding: 1px 4px;
+      margin-bottom: 2px;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 90px;
+    }
     .catalog-item.selected {
       border-color: #ffd166;
       background: rgba(255, 209, 102, 0.25);
@@ -1920,6 +1959,21 @@
         <button class="cat-tab" data-cat="floor">🧱 Flooring</button>
       </div>
       <button class="cat-tab" id="invTabBtn" style="background: rgba(255, 209, 102, 0.2); border-color: #ffd166; color: #ffd166;">🎒 Inventory (<span id="invCountText">0</span>)</button>
+    </div>
+
+    <!-- Theme & Style Sets Sub-Bar -->
+    <div style="display: flex; gap: 6px; width: 100%; overflow-x: auto; padding-bottom: 8px; margin-bottom: 10px; align-items: center; border-bottom: 1px dashed rgba(255,255,255,0.08); -webkit-overflow-scrolling: touch;">
+      <span style="font-size: 0.72rem; text-transform: uppercase; color: #94a3b8; font-weight: 800; white-space: nowrap; margin-right: 2px;">Theme Sets:</span>
+      <div id="shopThemeTabs" style="display: flex; gap: 6px;">
+        <button class="theme-tab active" data-theme="all">✨ All Sets</button>
+        <button class="theme-tab" data-theme="french">🥐 French Bistro</button>
+        <button class="theme-tab" data-theme="zen">🍱 Tokyo Zen</button>
+        <button class="theme-tab" data-theme="diner">🍔 50s Diner</button>
+        <button class="theme-tab" data-theme="trattoria">🍕 Italian Trattoria</button>
+        <button class="theme-tab" data-theme="cyber">⚡ Cyber Lounge</button>
+        <button class="theme-tab" data-theme="royal">👑 Royal Palace</button>
+        <button class="theme-tab" data-theme="tiki">🌺 Tropical Tiki</button>
+      </div>
     </div>
     
     <!-- Item grids -->

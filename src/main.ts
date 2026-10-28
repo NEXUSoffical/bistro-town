@@ -580,76 +580,136 @@ window.addEventListener('DOMContentLoaded', () => {
 
   // Category filtering & tab logic
   let activeCategory = 'all';
+  let activeTheme = 'all';
   const invTabBtn = document.getElementById('invTabBtn')!;
   const invCountText = document.getElementById('invCountText')!;
 
-  const catalogItems: (FurnitureItem & { category: 'stove' | 'table' | 'chair' | 'decor' | 'floor' | 'wall' | 'window' | 'door' })[] = [
-    // VIP Cash Luxury Items (Exclusive Real-Money Store Items)
-    { id: 'cat_royal_range', name: 'Golden Royal Range', type: 'stove', category: 'stove', price: 0, cashPrice: 15, currency: 'cash', color: '#ffd700', imageSrc: '/assets/furniture/stove.png', isWalkable: false },
-    { id: 'cat_cyber_cooker', name: 'Cyber Induction Oven', type: 'stove', category: 'stove', price: 0, cashPrice: 20, currency: 'cash', color: '#06d6a0', imageSrc: '/assets/furniture/pizza_oven.png', isWalkable: false },
-    { id: 'cat_marble_vip_table', name: 'Imperial Gold Table', type: 'table', category: 'table', price: 0, cashPrice: 8, currency: 'cash', color: '#d4af37', imageSrc: '/assets/furniture/round_table.png', isWalkable: false },
-    { id: 'cat_neon_table', name: 'Cyberpunk Neon Table', type: 'table', category: 'table', price: 0, cashPrice: 6, currency: 'cash', color: '#7209b7', imageSrc: '/assets/furniture/table.png', isWalkable: false },
-    { id: 'cat_royal_throne', name: 'Royal Velvet Throne', type: 'chair', category: 'chair', price: 0, cashPrice: 5, currency: 'cash', color: '#9d0208', imageSrc: '/assets/furniture/chair.png', isWalkable: true },
-    { id: 'cat_cyber_chair', name: 'Neon Hover Seat', type: 'chair', category: 'chair', price: 0, cashPrice: 4, currency: 'cash', color: '#3a0ca3', imageSrc: '/assets/furniture/chair_back.png', isWalkable: true },
-    { id: 'cat_golden_fountain', name: 'Grand Gold Fountain', type: 'plant', category: 'decor', price: 0, cashPrice: 12, currency: 'cash', color: '#ffd700', isWalkable: false },
-    { id: 'cat_neon_sign', name: 'Neon Bistro Sign', type: 'plant', category: 'decor', price: 0, cashPrice: 10, currency: 'cash', color: '#f72585', isWalkable: false },
-    { id: 'cat_cherry_bonsai', name: 'Cherry Blossom Bonsai', type: 'plant', category: 'decor', price: 0, cashPrice: 7, currency: 'cash', color: '#ffb703', isWalkable: false },
-    { id: 'cat_crystal_chandelier', name: 'Diamond Chandelier', type: 'plant', category: 'decor', price: 0, cashPrice: 14, currency: 'cash', color: '#e0fbfc', isWalkable: false },
-    { id: 'wall_celestial', name: 'Celestial Galaxy Wall', type: 'wall', category: 'wall', pattern: 'modern', price: 0, cashPrice: 4, currency: 'cash', color: '#3a0ca3', isWalkable: false },
-    { id: 'wall_gold_leaf', name: '24K Gold Leaf Wall', type: 'wall', category: 'wall', pattern: 'damask', price: 0, cashPrice: 5, currency: 'cash', color: '#d4af37', isWalkable: false },
-    { id: 'floor_lapis_gold', name: 'Lapis & Gold Tile', type: 'floor', category: 'floor', price: 0, cashPrice: 2, currency: 'cash', color: '#1d3557', isWalkable: true },
-    { id: 'floor_emerald_glass', name: 'Emerald Glass Tile', type: 'floor', category: 'floor', price: 0, cashPrice: 2, currency: 'cash', color: '#06d6a0', isWalkable: true },
+  interface ExtendedCatalogItem extends FurnitureItem {
+    category: 'stove' | 'table' | 'chair' | 'decor' | 'floor' | 'wall' | 'window' | 'door';
+    theme: 'french' | 'zen' | 'diner' | 'trattoria' | 'cyber' | 'royal' | 'tiki' | 'classic';
+    themeLabel?: string;
+  }
 
-    // Standard Coin Stoves
-    { id: 'cat_stove', name: 'Gas Stove', type: 'stove', category: 'stove', price: 120, imageSrc: '/assets/furniture/stove.png', color: '#264653', isWalkable: false },
-    { id: 'cat_pizza_oven', name: 'Pizza Oven', type: 'stove', category: 'stove', price: 250, imageSrc: '/assets/furniture/pizza_oven.png', color: '#8b4513', isWalkable: false },
-    
-    // Tables
-    { id: 'cat_table', name: 'Mahogany Table', type: 'table', category: 'table', price: 40, imageSrc: '/assets/furniture/table.png', color: '#8b5a2b', isWalkable: false },
-    { id: 'cat_round_table', name: 'Round Bistro Table', type: 'table', category: 'table', price: 75, imageSrc: '/assets/furniture/round_table.png', color: '#5c3a21', isWalkable: false },
+  const catalogItems: ExtendedCatalogItem[] = [
+    // --- 1. 🥐 FRENCH BISTRO SET ---
+    { id: 'cat_french_espresso', name: 'Copper Espresso Range', type: 'stove', category: 'stove', theme: 'french', themeLabel: '🥐 French Bistro', price: 150, imageSrc: '/assets/furniture/stove.png', color: '#b45309', isWalkable: false },
+    { id: 'cat_french_table', name: 'Parisian Marble Table', type: 'table', category: 'table', theme: 'french', themeLabel: '🥐 French Bistro', price: 65, imageSrc: '/assets/furniture/round_table.png', color: '#f8fafc', isWalkable: false },
+    { id: 'cat_french_chair', name: 'Woven Bistro Chair (Front)', type: 'chair', category: 'chair', theme: 'french', themeLabel: '🥐 French Bistro', price: 25, imageSrc: '/assets/furniture/chair.png', color: '#1d3557', isWalkable: true },
+    { id: 'cat_french_chair_back', name: 'Woven Bistro Chair (Back)', type: 'chair', category: 'chair', theme: 'french', themeLabel: '🥐 French Bistro', price: 25, imageSrc: '/assets/furniture/chair_back.png', color: '#1d3557', isWalkable: true },
+    { id: 'cat_french_pastry', name: 'Glass Pastry Showcase', type: 'plant', category: 'decor', theme: 'french', themeLabel: '🥐 French Bistro', price: 85, color: '#f59e0b', isWalkable: false },
+    { id: 'cat_french_flowers', name: 'Lavender Flower Cart', type: 'plant', category: 'decor', theme: 'french', themeLabel: '🥐 French Bistro', price: 55, color: '#a855f7', isWalkable: false },
+    { id: 'floor_herringbone', name: 'French Oak Parquet', type: 'floor', category: 'floor', theme: 'french', themeLabel: '🥐 French Bistro', pattern: 'herringbone', price: 8, color: '#b45309', isWalkable: true },
+    { id: 'wall_stripes', name: 'Parisian Stripes Wall', type: 'wall', category: 'wall', theme: 'french', themeLabel: '🥐 French Bistro', pattern: 'stripes', price: 45, color: '#780000', isWalkable: false },
+    { id: 'win_arched', name: 'Arched Bistro Window', type: 'window', category: 'window', theme: 'french', themeLabel: '🥐 French Bistro', pattern: 'arched', price: 45, color: '#caf0f8', isWalkable: false },
+    { id: 'door_french', name: 'Classic French Door', type: 'door', category: 'door', theme: 'french', themeLabel: '🥐 French Bistro', pattern: 'french', price: 65, color: '#6b4c35', isWalkable: true },
 
-    // Chairs
-    { id: 'cat_chair', name: 'Ruby Chair (Front)', type: 'chair', category: 'chair', price: 20, imageSrc: '/assets/furniture/chair.png', color: '#e63946', isWalkable: true },
-    { id: 'cat_chair_back', name: 'Ruby Chair (Back)', type: 'chair', category: 'chair', price: 20, imageSrc: '/assets/furniture/chair_back.png', color: '#e63946', isWalkable: true },
+    // --- 2. 🍱 TOKYO ZEN SET ---
+    { id: 'cat_zen_cauldron', name: 'Cast-Iron Ramen Cauldron', type: 'stove', category: 'stove', theme: 'zen', themeLabel: '🍱 Tokyo Zen', price: 180, imageSrc: '/assets/furniture/pizza_oven.png', color: '#1c1917', isWalkable: false },
+    { id: 'cat_zen_table', name: 'Hinoki Cypress Table', type: 'table', category: 'table', theme: 'zen', themeLabel: '🍱 Tokyo Zen', price: 50, imageSrc: '/assets/furniture/table.png', color: '#fde047', isWalkable: false },
+    { id: 'cat_zen_cushion', name: 'Tatami Zafu Seat (Front)', type: 'chair', category: 'chair', theme: 'zen', themeLabel: '🍱 Tokyo Zen', price: 20, imageSrc: '/assets/furniture/chair.png', color: '#2d6a4f', isWalkable: true },
+    { id: 'cat_zen_cushion_back', name: 'Tatami Zafu Seat (Back)', type: 'chair', category: 'chair', theme: 'zen', themeLabel: '🍱 Tokyo Zen', price: 20, imageSrc: '/assets/furniture/chair_back.png', color: '#2d6a4f', isWalkable: true },
+    { id: 'cat_zen_bonsai', name: 'Ancient Juniper Bonsai', type: 'plant', category: 'decor', theme: 'zen', themeLabel: '🍱 Tokyo Zen', price: 70, color: '#15803d', isWalkable: false },
+    { id: 'cat_cherry_bonsai', name: 'Cherry Blossom Bonsai', type: 'plant', category: 'decor', theme: 'zen', themeLabel: '🍱 Tokyo Zen', price: 0, cashPrice: 7, currency: 'cash', color: '#ffb703', isWalkable: false },
+    { id: 'cat_zen_lantern', name: 'Red Paper Chochin Lantern', type: 'plant', category: 'decor', theme: 'zen', themeLabel: '🍱 Tokyo Zen', price: 45, color: '#dc2626', isWalkable: false },
+    { id: 'floor_tatami', name: 'Woven Tatami Straw Mat', type: 'floor', category: 'floor', theme: 'zen', themeLabel: '🍱 Tokyo Zen', pattern: 'tatami', price: 10, color: '#e2d9b6', isWalkable: true },
+    { id: 'floor_zen_pebble', name: 'River Pebble Stones', type: 'floor', category: 'floor', theme: 'zen', themeLabel: '🍱 Tokyo Zen', pattern: 'pebble', price: 8, color: '#334155', isWalkable: true },
+    { id: 'wall_shoji', name: 'Shoji Rice Paper Wall', type: 'wall', category: 'wall', theme: 'zen', themeLabel: '🍱 Tokyo Zen', pattern: 'shoji', price: 55, color: '#fffbeb', isWalkable: false },
+    { id: 'win_shoji', name: 'Shoji Lattice Window', type: 'window', category: 'window', theme: 'zen', themeLabel: '🍱 Tokyo Zen', pattern: 'shoji', price: 60, color: '#fffbeb', isWalkable: false },
+    { id: 'door_shoji', name: 'Bamboo Shoji Sliding Door', type: 'door', category: 'door', theme: 'zen', themeLabel: '🍱 Tokyo Zen', pattern: 'shoji', price: 85, color: '#292524', isWalkable: true },
 
-    // Doors (Restaurant City architectural entrances)
-    { id: 'door_french', name: 'Classic French Door', type: 'door', category: 'door', pattern: 'french', price: 65, color: '#6b4c35', isWalkable: true },
-    { id: 'door_oak', name: 'Rustic Oak Arch Door', type: 'door', category: 'door', pattern: 'oak', price: 90, color: '#8b5a2b', isWalkable: true },
-    { id: 'door_glass', name: 'Modern Loft Glass Door', type: 'door', category: 'door', pattern: 'glass', price: 120, color: '#1e293b', isWalkable: true },
-    { id: 'door_cafe', name: 'Pastel Cafe Awning Door', type: 'door', category: 'door', pattern: 'cafe', price: 80, color: '#e63946', isWalkable: true },
-    { id: 'door_royal', name: 'Imperial Golden Door', type: 'door', category: 'door', pattern: 'royal', price: 240, color: '#d4af37', isWalkable: true },
+    // --- 3. 🍔 1950s RETRO DINER SET ---
+    { id: 'cat_diner_griddle', name: 'Chrome Flat-Top Griddle', type: 'stove', category: 'stove', theme: 'diner', themeLabel: '🍔 50s Diner', price: 160, imageSrc: '/assets/furniture/stove.png', color: '#e2e8f0', isWalkable: false },
+    { id: 'cat_diner_booth_table', name: 'Formica Diner Table', type: 'table', category: 'table', theme: 'diner', themeLabel: '🍔 50s Diner', price: 55, imageSrc: '/assets/furniture/table.png', color: '#06b6d4', isWalkable: false },
+    { id: 'cat_diner_stool', name: 'Red Vinyl Barstool (Front)', type: 'chair', category: 'chair', theme: 'diner', themeLabel: '🍔 50s Diner', price: 22, imageSrc: '/assets/furniture/chair.png', color: '#dc2626', isWalkable: true },
+    { id: 'cat_diner_stool_back', name: 'Red Vinyl Barstool (Back)', type: 'chair', category: 'chair', theme: 'diner', themeLabel: '🍔 50s Diner', price: 22, imageSrc: '/assets/furniture/chair_back.png', color: '#dc2626', isWalkable: true },
+    { id: 'cat_diner_jukebox', name: 'Neon Wurlitzer Jukebox', type: 'plant', category: 'decor', theme: 'diner', themeLabel: '🍔 50s Diner', price: 110, color: '#b91c1c', isWalkable: false },
+    { id: 'cat_diner_neon_open', name: "Neon 'OPEN 24/7' Sign", type: 'plant', category: 'decor', theme: 'diner', themeLabel: '🍔 50s Diner', price: 75, color: '#ec4899', isWalkable: false },
+    { id: 'floor_checker_bw', name: 'Retro B&W Checkerboard', type: 'floor', category: 'floor', theme: 'diner', themeLabel: '🍔 50s Diner', pattern: 'checker_bw', price: 6, color: '#0f172a', isWalkable: true },
+    { id: 'wall_diner', name: 'Turquoise Starburst Wall', type: 'wall', category: 'wall', theme: 'diner', themeLabel: '🍔 50s Diner', pattern: 'retro_diner', price: 50, color: '#06b6d4', isWalkable: false },
+    { id: 'win_diner', name: 'Streamline Chrome Window', type: 'window', category: 'window', theme: 'diner', themeLabel: '🍔 50s Diner', pattern: 'diner', price: 70, color: '#e2e8f0', isWalkable: false },
+    { id: 'door_diner', name: 'Porthole Diner Swing Door', type: 'door', category: 'door', theme: 'diner', themeLabel: '🍔 50s Diner', pattern: 'diner', price: 95, color: '#dc2626', isWalkable: true },
 
-    // Windows (Restaurant City architectural windows)
-    { id: 'win_arched', name: 'Arched Bistro Window', type: 'window', category: 'window', pattern: 'arched', price: 45, color: '#caf0f8', isWalkable: false },
-    { id: 'win_bay', name: 'Grand Bay Window', type: 'window', category: 'window', pattern: 'bay', price: 80, color: '#3e1f08', isWalkable: false },
-    { id: 'win_stained', name: 'Rose Stained Glass', type: 'window', category: 'window', pattern: 'stained', price: 125, color: '#ef233c', isWalkable: false },
-    { id: 'win_modern', name: 'Modern Loft Window', type: 'window', category: 'window', pattern: 'modern', price: 95, color: '#18181b', isWalkable: false },
-    { id: 'win_shutter', name: 'Rustic Shutter Window', type: 'window', category: 'window', pattern: 'shutter', price: 65, color: '#2563eb', isWalkable: false },
+    // --- 4. 🍕 ITALIAN TRATTORIA SET ---
+    { id: 'cat_pizza_oven', name: 'Brick Wood-Fired Oven', type: 'stove', category: 'stove', theme: 'trattoria', themeLabel: '🍕 Italian Trattoria', price: 250, imageSrc: '/assets/furniture/pizza_oven.png', color: '#8b4513', isWalkable: false },
+    { id: 'cat_trattoria_table', name: 'Tuscan Farmhouse Oak Table', type: 'table', category: 'table', theme: 'trattoria', themeLabel: '🍕 Italian Trattoria', price: 65, imageSrc: '/assets/furniture/table.png', color: '#8b5a2b', isWalkable: false },
+    { id: 'cat_trattoria_chair', name: 'Wicker Vineyard Chair (Front)', type: 'chair', category: 'chair', theme: 'trattoria', themeLabel: '🍕 Italian Trattoria', price: 24, imageSrc: '/assets/furniture/chair.png', color: '#a16207', isWalkable: true },
+    { id: 'cat_trattoria_chair_back', name: 'Wicker Vineyard Chair (Back)', type: 'chair', category: 'chair', theme: 'trattoria', themeLabel: '🍕 Italian Trattoria', price: 24, imageSrc: '/assets/furniture/chair_back.png', color: '#a16207', isWalkable: true },
+    { id: 'cat_trattoria_wine', name: 'Chianti Wine Oak Barrels', type: 'plant', category: 'decor', theme: 'trattoria', themeLabel: '🍕 Italian Trattoria', price: 90, color: '#78350f', isWalkable: false },
+    { id: 'floor_terracotta', name: 'Tuscan Terracotta Tile', type: 'floor', category: 'floor', theme: 'trattoria', themeLabel: '🍕 Italian Trattoria', pattern: 'terracotta', price: 7, color: '#c2410c', isWalkable: true },
+    { id: 'wall_brick', name: 'Exposed Tuscan Brick', type: 'wall', category: 'wall', theme: 'trattoria', themeLabel: '🍕 Italian Trattoria', pattern: 'brick', price: 60, color: '#9a3412', isWalkable: false },
+    { id: 'wall_tuscan', name: 'Sunbaked Terracotta Wall', type: 'wall', category: 'wall', theme: 'trattoria', themeLabel: '🍕 Italian Trattoria', pattern: 'tuscan', price: 55, color: '#ea580c', isWalkable: false },
+    { id: 'win_shutter', name: 'Vineyard Shutter Window', type: 'window', category: 'window', theme: 'trattoria', themeLabel: '🍕 Italian Trattoria', pattern: 'shutter', price: 65, color: '#2563eb', isWalkable: false },
+    { id: 'door_oak', name: 'Rustic Oak Arch Door', type: 'door', category: 'door', theme: 'trattoria', themeLabel: '🍕 Italian Trattoria', pattern: 'oak', price: 90, color: '#8b5a2b', isWalkable: true },
 
-    // Wallpapers (Restaurant City authentic styles)
-    { id: 'wall_sage', name: 'Sage Wainscot', type: 'wall', category: 'wall', pattern: 'sage', price: 25, color: '#588157', isWalkable: false },
-    { id: 'wall_stripes', name: 'Parisian Stripes', type: 'wall', category: 'wall', pattern: 'stripes', price: 45, color: '#780000', isWalkable: false },
-    { id: 'wall_floral', name: 'Vintage Rose', type: 'wall', category: 'wall', pattern: 'floral', price: 50, color: '#d8f3dc', isWalkable: false },
-    { id: 'wall_yellow', name: 'Sunny Beadboard', type: 'wall', category: 'wall', pattern: 'yellow', price: 35, color: '#fde047', isWalkable: false },
-    { id: 'wall_brick', name: 'Exposed Brick', type: 'wall', category: 'wall', pattern: 'brick', price: 60, color: '#9a3412', isWalkable: false },
-    { id: 'wall_damask', name: 'Royal Damask', type: 'wall', category: 'wall', pattern: 'damask', price: 85, color: '#1e293b', isWalkable: false },
-    { id: 'wall_modern', name: 'Obsidian Slate', type: 'wall', category: 'wall', pattern: 'modern', price: 110, color: '#27272a', isWalkable: false },
+    // --- 5. ⚡ CYBERPUNK 2077 LOUNGE SET ---
+    { id: 'cat_cyber_cooker', name: 'Cyber Induction Oven', type: 'stove', category: 'stove', theme: 'cyber', themeLabel: '⚡ Cyber Lounge', price: 350, cashPrice: 20, currency: 'cash', color: '#06d6a0', imageSrc: '/assets/furniture/pizza_oven.png', isWalkable: false },
+    { id: 'cat_cyber_table', name: 'Hex-Grid Cyber Table', type: 'table', category: 'table', theme: 'cyber', themeLabel: '⚡ Cyber Lounge', price: 80, imageSrc: '/assets/furniture/table.png', color: '#06b6d4', isWalkable: false },
+    { id: 'cat_neon_table', name: 'Cyberpunk Neon Table', type: 'table', category: 'table', theme: 'cyber', themeLabel: '⚡ Cyber Lounge', price: 0, cashPrice: 6, currency: 'cash', color: '#7209b7', imageSrc: '/assets/furniture/table.png', isWalkable: false },
+    { id: 'cat_cyber_chair', name: 'Neon Hover Seat (Front)', type: 'chair', category: 'chair', theme: 'cyber', themeLabel: '⚡ Cyber Lounge', price: 35, cashPrice: 4, currency: 'cash', color: '#3a0ca3', imageSrc: '/assets/furniture/chair.png', isWalkable: true },
+    { id: 'cat_cyber_chair_back', name: 'Neon Hover Seat (Back)', type: 'chair', category: 'chair', theme: 'cyber', themeLabel: '⚡ Cyber Lounge', price: 35, imageSrc: '/assets/furniture/chair_back.png', color: '#3a0ca3', isWalkable: true },
+    { id: 'cat_cyber_arcade', name: 'Hologram Arcade Machine', type: 'plant', category: 'decor', theme: 'cyber', themeLabel: '⚡ Cyber Lounge', price: 140, color: '#1e1b4b', isWalkable: false },
+    { id: 'cat_cyber_server', name: 'Pulsing AI Core Terminal', type: 'plant', category: 'decor', theme: 'cyber', themeLabel: '⚡ Cyber Lounge', price: 120, color: '#0f172a', isWalkable: false },
+    { id: 'cat_neon_sign', name: 'Neon Bistro Sign', type: 'plant', category: 'decor', theme: 'cyber', themeLabel: '⚡ Cyber Lounge', price: 0, cashPrice: 10, currency: 'cash', color: '#f72585', isWalkable: false },
+    { id: 'floor_cyber_grid', name: 'Glowing Cyber Grid Floor', type: 'floor', category: 'floor', theme: 'cyber', themeLabel: '⚡ Cyber Lounge', pattern: 'cyber_grid', price: 12, color: '#090d16', isWalkable: true },
+    { id: 'floor_emerald_glass', name: 'Emerald Glass Tile', type: 'floor', category: 'floor', theme: 'cyber', themeLabel: '⚡ Cyber Lounge', price: 0, cashPrice: 2, currency: 'cash', color: '#06d6a0', isWalkable: true },
+    { id: 'wall_cyber', name: 'Matrix Circuit Wall', type: 'wall', category: 'wall', theme: 'cyber', themeLabel: '⚡ Cyber Lounge', pattern: 'cyber', price: 75, color: '#090d16', isWalkable: false },
+    { id: 'wall_celestial', name: 'Celestial Galaxy Wall', type: 'wall', category: 'wall', theme: 'cyber', themeLabel: '⚡ Cyber Lounge', pattern: 'modern', price: 0, cashPrice: 4, currency: 'cash', color: '#3a0ca3', isWalkable: false },
+    { id: 'win_cyber', name: 'Hologram City Viewport', type: 'window', category: 'window', theme: 'cyber', themeLabel: '⚡ Cyber Lounge', pattern: 'cyber', price: 110, color: '#090d16', isWalkable: false },
+    { id: 'door_cyber', name: 'Hydraulic Air-Lock Door', type: 'door', category: 'door', theme: 'cyber', themeLabel: '⚡ Cyber Lounge', pattern: 'cyber', price: 140, color: '#0f172a', isWalkable: true },
 
-    // Decor
-    { id: 'cat_plant', name: 'Palm Plant', type: 'plant', category: 'decor', price: 35, color: '#2a9d8f', isWalkable: false },
+    // --- 6. 👑 IMPERIAL ROYAL PALACE SET ---
+    { id: 'cat_royal_range', name: 'Golden Royal Range', type: 'stove', category: 'stove', theme: 'royal', themeLabel: '👑 Royal Palace', price: 380, cashPrice: 15, currency: 'cash', color: '#ffd700', imageSrc: '/assets/furniture/stove.png', isWalkable: false },
+    { id: 'cat_marble_vip_table', name: 'Imperial Gold Table', type: 'table', category: 'table', theme: 'royal', themeLabel: '👑 Royal Palace', price: 120, cashPrice: 8, currency: 'cash', color: '#d4af37', imageSrc: '/assets/furniture/round_table.png', isWalkable: false },
+    { id: 'cat_royal_throne', name: 'Royal Velvet Throne (Front)', type: 'chair', category: 'chair', theme: 'royal', themeLabel: '👑 Royal Palace', price: 50, cashPrice: 5, currency: 'cash', color: '#9d0208', imageSrc: '/assets/furniture/chair.png', isWalkable: true },
+    { id: 'cat_royal_throne_back', name: 'Royal Velvet Throne (Back)', type: 'chair', category: 'chair', theme: 'royal', themeLabel: '👑 Royal Palace', price: 50, imageSrc: '/assets/furniture/chair_back.png', color: '#9d0208', isWalkable: true },
+    { id: 'cat_golden_fountain', name: 'Grand Gold Fountain', type: 'plant', category: 'decor', theme: 'royal', themeLabel: '👑 Royal Palace', price: 220, cashPrice: 12, currency: 'cash', color: '#ffd700', isWalkable: false },
+    { id: 'cat_royal_statue', name: 'Classical Marble Statue', type: 'plant', category: 'decor', theme: 'royal', themeLabel: '👑 Royal Palace', price: 160, color: '#cbd5e1', isWalkable: false },
+    { id: 'cat_crystal_chandelier', name: 'Diamond Chandelier', type: 'plant', category: 'decor', theme: 'royal', themeLabel: '👑 Royal Palace', price: 0, cashPrice: 14, currency: 'cash', color: '#e0fbfc', isWalkable: false },
+    { id: 'floor_royal_marble', name: 'Imperial Gold Marble', type: 'floor', category: 'floor', theme: 'royal', themeLabel: '👑 Royal Palace', pattern: 'royal_marble', price: 15, color: '#fdf4dc', isWalkable: true },
+    { id: 'floor_red_carpet', name: 'Regal Crimson Carpet', type: 'floor', category: 'floor', theme: 'royal', themeLabel: '👑 Royal Palace', pattern: 'red_carpet', price: 10, color: '#7f1d1d', isWalkable: true },
+    { id: 'floor_lapis_gold', name: 'Lapis & Gold Tile', type: 'floor', category: 'floor', theme: 'royal', themeLabel: '👑 Royal Palace', price: 0, cashPrice: 2, currency: 'cash', color: '#1d3557', isWalkable: true },
+    { id: 'wall_damask', name: 'Royal Velvet Damask', type: 'wall', category: 'wall', theme: 'royal', themeLabel: '👑 Royal Palace', pattern: 'damask', price: 85, color: '#1e293b', isWalkable: false },
+    { id: 'wall_gold_leaf', name: '24K Gold Leaf Wall', type: 'wall', category: 'wall', theme: 'royal', themeLabel: '👑 Royal Palace', pattern: 'damask', price: 0, cashPrice: 5, currency: 'cash', color: '#d4af37', isWalkable: false },
+    { id: 'win_stained', name: 'Rose Stained Glass', type: 'window', category: 'window', theme: 'royal', themeLabel: '👑 Royal Palace', pattern: 'stained', price: 125, color: '#ef233c', isWalkable: false },
+    { id: 'door_royal', name: 'Imperial Golden Door', type: 'door', category: 'door', theme: 'royal', themeLabel: '👑 Royal Palace', pattern: 'royal', price: 240, color: '#d4af37', isWalkable: true },
 
-    // Flooring
-    { id: 'cat_floor_tile', name: 'Marble Tile', type: 'floor', category: 'floor', price: 5, color: '#e0e1dd', isWalkable: true },
-    { id: 'cat_floor_wood', name: 'Wood Plank', type: 'floor', category: 'floor', price: 5, color: '#deb887', isWalkable: true }
+    // --- 7. 🌺 TROPICAL TIKI ISLAND SET ---
+    { id: 'cat_tiki_bbq', name: 'Bamboo Smokehouse BBQ', type: 'stove', category: 'stove', theme: 'tiki', themeLabel: '🌺 Tropical Tiki', price: 170, imageSrc: '/assets/furniture/stove.png', color: '#78350f', isWalkable: false },
+    { id: 'cat_tiki_table', name: 'Carved Coconut Table', type: 'table', category: 'table', theme: 'tiki', themeLabel: '🌺 Tropical Tiki', price: 45, imageSrc: '/assets/furniture/round_table.png', color: '#5c3a21', isWalkable: false },
+    { id: 'cat_tiki_stool', name: 'Woven Palm Stool (Front)', type: 'chair', category: 'chair', theme: 'tiki', themeLabel: '🌺 Tropical Tiki', price: 18, imageSrc: '/assets/furniture/chair.png', color: '#d97706', isWalkable: true },
+    { id: 'cat_tiki_stool_back', name: 'Woven Palm Stool (Back)', type: 'chair', category: 'chair', theme: 'tiki', themeLabel: '🌺 Tropical Tiki', price: 18, imageSrc: '/assets/furniture/chair_back.png', color: '#d97706', isWalkable: true },
+    { id: 'cat_tiki_totem', name: 'Hand-Carved Tiki Totem', type: 'plant', category: 'decor', theme: 'tiki', themeLabel: '🌺 Tropical Tiki', price: 95, color: '#78350f', isWalkable: false },
+    { id: 'cat_plant', name: 'Lush Tropical Palm Tree', type: 'plant', category: 'decor', theme: 'tiki', themeLabel: '🌺 Tropical Tiki', price: 35, color: '#2a9d8f', isWalkable: false },
+    { id: 'floor_beach_plank', name: 'Sun-Bleached Driftwood', type: 'floor', category: 'floor', theme: 'tiki', themeLabel: '🌺 Tropical Tiki', pattern: 'beach_plank', price: 6, color: '#e7cba9', isWalkable: true },
+    { id: 'wall_bamboo', name: 'Woven Bamboo Reed Wall', type: 'wall', category: 'wall', theme: 'tiki', themeLabel: '🌺 Tropical Tiki', pattern: 'bamboo', price: 40, color: '#d97706', isWalkable: false },
+    { id: 'win_modern', name: 'Island Open Breeze Window', type: 'window', category: 'window', theme: 'tiki', themeLabel: '🌺 Tropical Tiki', pattern: 'modern', price: 95, color: '#18181b', isWalkable: false },
+    { id: 'door_cafe', name: 'Pastel Cafe Awning Door', type: 'door', category: 'door', theme: 'tiki', themeLabel: '🌺 Tropical Tiki', pattern: 'cafe', price: 80, color: '#e63946', isWalkable: true },
+
+    // --- 8. ☕ CLASSIC BISTRO ESSENTIALS ---
+    { id: 'cat_stove', name: 'Classic Gas Stove', type: 'stove', category: 'stove', theme: 'classic', themeLabel: '☕ Classic Bistro', price: 120, imageSrc: '/assets/furniture/stove.png', color: '#264653', isWalkable: false },
+    { id: 'cat_table', name: 'Mahogany Dining Table', type: 'table', category: 'table', theme: 'classic', themeLabel: '☕ Classic Bistro', price: 40, imageSrc: '/assets/furniture/table.png', color: '#8b5a2b', isWalkable: false },
+    { id: 'cat_round_table', name: 'Round Bistro Table', type: 'table', category: 'table', theme: 'classic', themeLabel: '☕ Classic Bistro', price: 75, imageSrc: '/assets/furniture/round_table.png', color: '#5c3a21', isWalkable: false },
+    { id: 'cat_chair', name: 'Ruby Chair (Front)', type: 'chair', category: 'chair', theme: 'classic', themeLabel: '☕ Classic Bistro', price: 20, imageSrc: '/assets/furniture/chair.png', color: '#e63946', isWalkable: true },
+    { id: 'cat_chair_back', name: 'Ruby Chair (Back)', type: 'chair', category: 'chair', theme: 'classic', themeLabel: '☕ Classic Bistro', price: 20, imageSrc: '/assets/furniture/chair_back.png', color: '#e63946', isWalkable: true },
+    { id: 'cat_floor_tile', name: 'Polished Marble Tile', type: 'floor', category: 'floor', theme: 'classic', themeLabel: '☕ Classic Bistro', price: 5, color: '#e0e1dd', isWalkable: true },
+    { id: 'cat_floor_wood', name: 'Classic Wood Plank', type: 'floor', category: 'floor', theme: 'classic', themeLabel: '☕ Classic Bistro', price: 5, color: '#deb887', isWalkable: true },
+    { id: 'wall_sage', name: 'Sage Wainscot Wall', type: 'wall', category: 'wall', theme: 'classic', themeLabel: '☕ Classic Bistro', pattern: 'sage', price: 25, color: '#588157', isWalkable: false },
+    { id: 'wall_floral', name: 'Vintage Rose Wallpaper', type: 'wall', category: 'wall', theme: 'classic', themeLabel: '☕ Classic Bistro', pattern: 'floral', price: 50, color: '#d8f3dc', isWalkable: false },
+    { id: 'wall_yellow', name: 'Sunny Beadboard Wall', type: 'wall', category: 'wall', theme: 'classic', themeLabel: '☕ Classic Bistro', pattern: 'yellow', price: 35, color: '#fde047', isWalkable: false },
+    { id: 'wall_modern', name: 'Obsidian Slate Wall', type: 'wall', category: 'wall', theme: 'classic', themeLabel: '☕ Classic Bistro', pattern: 'modern', price: 110, color: '#27272a', isWalkable: false },
+    { id: 'win_bay', name: 'Grand Bay Window', type: 'window', category: 'window', theme: 'classic', themeLabel: '☕ Classic Bistro', pattern: 'bay', price: 80, color: '#3e1f08', isWalkable: false },
+    { id: 'door_glass', name: 'Modern Loft Glass Door', type: 'door', category: 'door', theme: 'classic', themeLabel: '☕ Classic Bistro', pattern: 'glass', price: 120, color: '#1e293b', isWalkable: true }
   ];
 
   const renderCatalog = () => {
     catalogList.innerHTML = '';
-    const filtered = activeCategory === 'all' 
-      ? catalogItems 
-      : (activeCategory === 'cash' 
-          ? catalogItems.filter(item => item.currency === 'cash')
-          : catalogItems.filter(item => item.category === activeCategory));
+    const filtered = catalogItems.filter(item => {
+      const matchCat = activeCategory === 'all' 
+        ? true 
+        : (activeCategory === 'cash' ? item.currency === 'cash' : item.category === activeCategory);
+      const matchTheme = activeTheme === 'all' ? true : item.theme === activeTheme;
+      return matchCat && matchTheme;
+    });
 
     filtered.forEach(item => {
       const card = document.createElement('div');
@@ -668,6 +728,12 @@ window.addEventListener('DOMContentLoaded', () => {
           doorBg = `background: linear-gradient(180deg, #1e3a8a, #0f172a); border: 2.5px solid #fbbf24; box-shadow: inset 0 0 4px #fbbf24;`;
         } else if (item.pattern === 'cafe') {
           doorBg = `background: linear-gradient(180deg, #ef233c 30%, #ffffff 30%, #ffffff 35%, #5c3a21 35%); border: 2px solid #5c3a21;`;
+        } else if (item.pattern === 'shoji') {
+          doorBg = `background: #fffbeb; border: 2px solid #292524;`;
+        } else if (item.pattern === 'diner') {
+          doorBg = `background: #dc2626; border: 2px solid #e2e8f0;`;
+        } else if (item.pattern === 'cyber') {
+          doorBg = `background: #0f172a; border: 2px solid #06b6d4;`;
         } else {
           doorBg = `background: linear-gradient(180deg, #6b4c35, #3e1f08); border: 2.5px solid #2b1d12; border-radius: 8px 8px 2px 2px;`;
         }
@@ -685,6 +751,12 @@ window.addEventListener('DOMContentLoaded', () => {
           winPreview = `background: linear-gradient(180deg, #0284c7, #bae6fd); border: 2px solid #18181b; box-shadow: inset 0 0 0 1px #eab308;`;
         } else if (item.pattern === 'shutter') {
           winPreview = `background: linear-gradient(180deg, #93c5fd, #eff6ff); border: 2px solid #ffffff; box-shadow: -4px 0 0 #2563eb, 4px 0 0 #2563eb, 0 2px 4px rgba(0,0,0,0.3); margin: 0 4px;`;
+        } else if (item.pattern === 'shoji') {
+          winPreview = `background: #fffbeb; border: 2px solid #292524;`;
+        } else if (item.pattern === 'diner') {
+          winPreview = `background: #38bdf8; border: 2.5px solid #e2e8f0; border-radius: 10px;`;
+        } else if (item.pattern === 'cyber') {
+          winPreview = `background: #082f49; border: 2px solid #06b6d4;`;
         } else {
           winPreview = `background: linear-gradient(180deg, #90e0ef, #caf0f8); border: 2.5px solid #bc6c25; border-radius: 10px 10px 3px 3px; box-shadow: 0 2px 4px rgba(0,0,0,0.3);`;
         }
@@ -706,6 +778,16 @@ window.addEventListener('DOMContentLoaded', () => {
           bgStyle = `background: repeating-linear-gradient(90deg, #fde047, #fde047 5px, rgba(255,255,255,0.7) 5px, rgba(255,255,255,0.7) 6px);`;
         } else if (item.pattern === 'modern') {
           bgStyle = `background: linear-gradient(180deg, #27272a 50%, #eab308 50%, #eab308 55%, #18181b 55%);`;
+        } else if (item.pattern === 'shoji') {
+          bgStyle = `background: repeating-linear-gradient(0deg, #fffbeb, #fffbeb 8px, #292524 8px, #292524 9px);`;
+        } else if (item.pattern === 'retro_diner') {
+          bgStyle = `background: #06b6d4;`;
+        } else if (item.pattern === 'tuscan') {
+          bgStyle = `background: #ea580c;`;
+        } else if (item.pattern === 'cyber') {
+          bgStyle = `background: #090d16; border: 1px solid #06b6d4;`;
+        } else if (item.pattern === 'bamboo') {
+          bgStyle = `background: repeating-linear-gradient(90deg, #d97706, #d97706 6px, #78350f 6px, #78350f 7px);`;
         } else {
           bgStyle = `background: linear-gradient(135deg, #588157, #3a5a40);`;
         }
@@ -719,8 +801,13 @@ window.addEventListener('DOMContentLoaded', () => {
         ? `<div class="item-price cash">💵 ${item.cashPrice} Cash</div>`
         : `<div class="item-price">🪙 ${item.price}</div>`;
 
+      const themeBadge = item.themeLabel
+        ? `<div class="item-theme-tag">${item.themeLabel}</div>`
+        : '';
+
       card.innerHTML = `
         ${previewHtml}
+        ${themeBadge}
         <div class="item-title">${item.name}</div>
         ${priceBadge}
       `;
@@ -749,6 +836,18 @@ window.addEventListener('DOMContentLoaded', () => {
       document.querySelectorAll('.cat-tab[data-cat], #invTabBtn').forEach(b => b.classList.remove('active'));
       tabEl.classList.add('active');
       activeCategory = (tabEl as HTMLElement).dataset.cat || 'all';
+      catalogList.style.display = 'flex';
+      inventoryList.style.display = 'none';
+      renderCatalog();
+    });
+  });
+
+  // Setup Theme Tab click events
+  document.querySelectorAll('.theme-tab[data-theme]').forEach(tabEl => {
+    tabEl.addEventListener('click', () => {
+      document.querySelectorAll('.theme-tab[data-theme]').forEach(b => b.classList.remove('active'));
+      tabEl.classList.add('active');
+      activeTheme = (tabEl as HTMLElement).dataset.theme || 'all';
       catalogList.style.display = 'flex';
       inventoryList.style.display = 'none';
       renderCatalog();
