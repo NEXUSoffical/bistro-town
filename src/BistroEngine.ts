@@ -447,6 +447,7 @@ export class BistroEngine {
 
   // Game state (Authentic Restaurant City Grind)
   coins = 80;
+  creditLimit = -1000; // Allow balance to go negative into debt (overdraft line of credit)
   cash = 25; // Bistro Cash (Real-money premium currency)
   rating = 0.5; // Star rating (starts at 0.5 half-a-star, max 5.0 stars)
   hasReachedFiveStars = false;
@@ -616,8 +617,8 @@ export class BistroEngine {
       return { success: false, message: `Requires Bistro Level ${reqLevel} to unlock this dish!` };
     }
     const cost = this.getRecipeUpgradeCost(recipe);
-    if (this.coins < cost) {
-      return { success: false, message: `Requires ${cost} 🪙! (Need ${cost - this.coins} more 🪙)` };
+    if ((this.coins - cost) < this.creditLimit) {
+      return { success: false, message: `Requires ${cost} 🪙! (Exceeds debt limit of ${this.creditLimit} 🪙)` };
     }
 
     const reqs = this.getRequiredIngredients(recipe);
@@ -757,8 +758,8 @@ export class BistroEngine {
     const deal = this.marketDeals.find(d => d.id === dealId);
     if (!deal) return { success: false, message: 'Deal expired or not found.' };
     if (deal.isSoldOut) return { success: false, message: 'This deal is already sold out!' };
-    if (this.coins < deal.coinPrice) {
-      return { success: false, message: `Need ${deal.coinPrice} 🪙! (Need ${deal.coinPrice - this.coins} more 🪙)` };
+    if ((this.coins - deal.coinPrice) < this.creditLimit) {
+      return { success: false, message: `Need ${deal.coinPrice} 🪙! (Exceeds debt limit of ${this.creditLimit} 🪙)` };
     }
 
     this.coins -= deal.coinPrice;
@@ -1908,33 +1909,22 @@ export class BistroEngine {
       const staffList = this.getStaffList();
       const totalWages = this.getTotalShiftWages();
       if (staffList.length > 0) {
-        if (this.coins >= totalWages) {
-          this.coins -= totalWages;
-          staffList.forEach(s => {
-            if (s.role === 'chef') this.recordExpense('chefWages', s.wage || 8);
-            else if (s.role === 'waiter') this.recordExpense('waiterWages', s.wage || 5);
-            else if (s.role === 'cleaner') this.recordExpense('cleanerWages', s.wage || 4);
-          });
-          this.saveGameState();
-          this.spawnFloatingText(`-${totalWages} 🪙 (Staff Wages)`, this.canvas.width / 2, 90, '#f87171');
-          if (this.onPayrollPaid) {
-            this.onPayrollPaid(totalWages, staffList.length, false);
-          }
-        } else {
-          // Deficit: unpaid wages!
-          const unpaid = Math.max(0, totalWages - Math.max(0, this.coins));
-          this.recordExpense('wageDeficits', unpaid);
-          staffList.forEach(s => {
-            if (s.role === 'chef') this.recordExpense('chefWages', s.wage || 8);
-            else if (s.role === 'waiter') this.recordExpense('waiterWages', s.wage || 5);
-            else if (s.role === 'cleaner') this.recordExpense('cleanerWages', s.wage || 4);
-          });
-          this.coins = 0;
-          this.adjustRating(-0.50, '-0.50 ⭐ Wage Deficit!', this.canvas.width / 2, 90);
-          this.saveGameState();
-          if (this.onPayrollPaid) {
-            this.onPayrollPaid(totalWages, staffList.length, true);
-          }
+        // Full wage deduction allows coins to go negative into debt (e.g. 0 - 14 = -14)
+        this.coins -= totalWages;
+        staffList.forEach(s => {
+          if (s.role === 'chef') this.recordExpense('chefWages', s.wage || 8);
+          else if (s.role === 'waiter') this.recordExpense('waiterWages', s.wage || 5);
+          else if (s.role === 'cleaner') this.recordExpense('cleanerWages', s.wage || 4);
+        });
+        this.saveGameState();
+
+        const isDeficit = this.coins < 0;
+        const msg = isDeficit
+          ? `-${totalWages} 🪙 (Staff Wages - Debt: ${this.coins} 🪙)`
+          : `-${totalWages} 🪙 (Staff Wages)`;
+        this.spawnFloatingText(msg, this.canvas.width / 2, 90, '#f87171');
+        if (this.onPayrollPaid) {
+          this.onPayrollPaid(totalWages, staffList.length, isDeficit);
         }
       }
     }
@@ -2439,8 +2429,8 @@ export class BistroEngine {
     if (this.level < nextTier.minLevel) {
       return { can: false, reason: `Requires Level ${nextTier.minLevel}! (Currently Lv. ${this.level})`, nextTier };
     }
-    if (this.coins < nextTier.cost) {
-      return { can: false, reason: `Requires ${nextTier.cost} 🪙! (Need ${nextTier.cost - this.coins} more)`, nextTier };
+    if ((this.coins - nextTier.cost) < this.creditLimit) {
+      return { can: false, reason: `Requires ${nextTier.cost} 🪙! (Exceeds debt limit of ${this.creditLimit} 🪙)`, nextTier };
     }
     return { can: true, nextTier };
   }
@@ -4419,7 +4409,7 @@ export class BistroEngine {
         if (this.selectedTool && this.selectedTool.type === 'wall') {
           const isCash = this.selectedTool.currency === 'cash';
           const cost = isCash ? (this.selectedTool.cashPrice || 0) : this.selectedTool.price;
-          const hasFunds = isCash ? (this.cash >= cost) : (this.coins >= cost);
+          const hasFunds = isCash ? (this.cash >= cost) : ((this.coins - cost) >= this.creditLimit);
 
           if (hasFunds) {
             if (isCash) {
@@ -4451,7 +4441,7 @@ export class BistroEngine {
           const tool = this.selectedTool;
           const isFromInv = tool.isFromInventory;
           const toolPrice = isFromInv ? 0 : tool.price;
-          if (this.coins >= toolPrice) {
+          if (isFromInv || (this.coins - toolPrice >= this.creditLimit)) {
             this.coins -= toolPrice;
             if (!isFromInv) this.recordExpense('decorWallpapers', toolPrice);
 
@@ -4526,7 +4516,7 @@ export class BistroEngine {
           const tool = this.selectedTool;
           const isFromInv = tool.isFromInventory;
           const toolPrice = isFromInv ? 0 : tool.price;
-          if (this.coins >= toolPrice) {
+          if (isFromInv || (this.coins - toolPrice >= this.creditLimit)) {
             this.coins -= toolPrice;
             if (!isFromInv) this.recordExpense('decorWallpapers', toolPrice);
 
@@ -4626,7 +4616,7 @@ export class BistroEngine {
         const isFromInv = tool.isFromInventory;
         const isCash = tool.currency === 'cash';
         const toolPrice = isFromInv ? 0 : (isCash ? (tool.cashPrice || 0) : tool.price);
-        const hasFunds = isFromInv || (isCash ? (this.cash >= toolPrice) : (this.coins >= toolPrice));
+        const hasFunds = isFromInv || (isCash ? (this.cash >= toolPrice) : ((this.coins - toolPrice) >= this.creditLimit));
 
         if (hasFunds) {
           if (!isFromInv) {
@@ -5160,8 +5150,8 @@ export class BistroEngine {
 
   hireStaff(role: StaffRole): { success: boolean; message: string; staff?: Actor } {
     const cost = this.getStaffHireCost(role);
-    if (this.coins < cost) {
-      return { success: false, message: `Not enough coins! Need ${cost} 🪙 to hire.` };
+    if ((this.coins - cost) < this.creditLimit) {
+      return { success: false, message: `Debt limit reached (${this.creditLimit} 🪙)! Need ${cost} 🪙 to hire.` };
     }
 
     const currentStaff = this.getStaffList();

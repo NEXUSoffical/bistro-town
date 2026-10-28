@@ -344,6 +344,13 @@ window.addEventListener('DOMContentLoaded', () => {
     xpDisplay.innerText = engine.xp.toString();
     nextXpDisplay.innerText = engine.nextLevelXp.toString();
     coinsDisplay.innerText = engine.coins.toString();
+    if (engine.coins < 0) {
+      coinsDisplay.parentElement?.classList.add('debt');
+      coinsDisplay.parentElement?.setAttribute('title', `In Debt: ${engine.coins} 🪙 (Serve diners to repay debt)`);
+    } else {
+      coinsDisplay.parentElement?.classList.remove('debt');
+      coinsDisplay.parentElement?.setAttribute('title', `Coins: ${engine.coins} 🪙`);
+    }
     if (cashDisplay) cashDisplay.innerText = engine.cash.toString();
     if (storeModalCashDisplay) storeModalCashDisplay.innerText = engine.cash.toString();
     updateRatingUI(engine.rating);
@@ -1060,7 +1067,7 @@ window.addEventListener('DOMContentLoaded', () => {
     if (isDeficit) {
       audio.init();
       audio.playDecorSound();
-      showToast(`🚨 PAYDAY DEFICIT! Couldn't afford ${amount} 🪙 wages for ${staffCount} staff! Rating dropped by -0.5 ⭐!`);
+      showToast(`💸 Shift Wages Paid: -${amount} 🪙 to ${staffCount} staff. Balance: ${engine.coins} 🪙 (in debt).`);
     } else {
       audio.init();
       audio.playCoinSound();
@@ -1168,7 +1175,7 @@ window.addEventListener('DOMContentLoaded', () => {
       }
 
       const cost = engine.getRecipeUpgradeCost(recipe);
-      const canAfford = engine.coins >= cost;
+      const canAfford = (engine.coins - cost) >= (engine.creditLimit ?? -1000);
       const isMax = recipe.level >= 10;
       const progressPct = Math.min(100, (recipe.level / 10) * 100);
       const reqs = engine.getRequiredIngredients(recipe);
@@ -1898,7 +1905,13 @@ window.addEventListener('DOMContentLoaded', () => {
 
       if (csLevelVal) csLevelVal.innerText = `Lv.${engine.level}`;
       if (csRatingVal) csRatingVal.innerText = `★ ${engine.rating.toFixed(1)}`;
-      if (csCoinsVal) csCoinsVal.innerText = `🪙 ${engine.coins.toLocaleString()}`;
+      if (csCoinsVal) {
+        if (engine.coins < 0) {
+          csCoinsVal.innerHTML = `<span style="color: #f87171; font-weight: 700;">🪙 ${engine.coins.toLocaleString()} (Debt)</span>`;
+        } else {
+          csCoinsVal.innerText = `🪙 ${engine.coins.toLocaleString()}`;
+        }
+      }
       if (csCashVal) csCashVal.innerText = `💵 ${engine.cash.toLocaleString()}`;
     } else {
       if (authLoggedOutView) authLoggedOutView.style.display = 'block';

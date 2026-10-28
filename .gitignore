@@ -12,3 +12,4 @@ bistro_firebase_password*
 .DS_Store
 *.local
 *.sw?
+*.metadata.json
