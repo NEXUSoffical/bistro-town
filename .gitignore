@@ -1,0 +1,14 @@
+# Dependencies
+node_modules
+dist
+dist-ssr
+
+# Environment & Credentials
+.env*
+*password*
+bistro_firebase_password*
+
+# Editor & OS files
+.DS_Store
+*.local
+*.sw?

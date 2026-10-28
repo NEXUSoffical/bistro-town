@@ -1,0 +1,2443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bistro Town - Restaurant City Revival</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Nunito:wght@400;700;800&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      margin: 0;
+      padding: 0;
+    }
+    body, html {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: #0d1117;
+      font-family: 'Fredoka', 'Nunito', sans-serif;
+    }
+    canvas {
+      display: block;
+      width: 100vw;
+      height: 100vh;
+    }
+    /* Top Bar HUD */
+    .bistro-topbar {
+      position: absolute;
+      top: 16px;
+      left: 16px;
+      right: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      pointer-events: none;
+    }
+    .hud-card {
+      pointer-events: auto;
+      background: rgba(22, 27, 34, 0.85);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 16px;
+      padding: 10px 18px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+      color: #fff;
+    }
+    .stat-badge {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 1.15rem;
+      font-weight: 700;
+    }
+    .stat-badge.coins {
+      color: #ffd166;
+    }
+    .stat-badge.cash {
+      color: #34d399;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .btn-add-cash {
+      background: linear-gradient(180deg, #10b981, #059669);
+      border: 1.5px solid #6ee7b7;
+      color: #fff;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: 0 2px 6px rgba(16, 185, 129, 0.4);
+      transition: all 0.15s ease;
+      line-height: 1;
+      padding: 0;
+      margin-left: 2px;
+    }
+    .btn-add-cash:hover {
+      transform: scale(1.15);
+      background: linear-gradient(180deg, #34d399, #10b981);
+      box-shadow: 0 4px 10px rgba(16, 185, 129, 0.6);
+    }
+    .stat-badge.rating-badge {
+      color: #ffd166;
+      background: linear-gradient(135deg, rgba(255, 209, 102, 0.16), rgba(245, 158, 11, 0.06));
+      border: 1px solid rgba(255, 209, 102, 0.35);
+      border-radius: 12px;
+      padding: 4px 10px;
+      cursor: pointer;
+      box-shadow: 0 2px 10px rgba(245, 158, 11, 0.15);
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .stat-badge.rating-badge:hover {
+      border-color: rgba(255, 209, 102, 0.7);
+      background: linear-gradient(135deg, rgba(255, 209, 102, 0.25), rgba(245, 158, 11, 0.12));
+      box-shadow: 0 4px 16px rgba(255, 209, 102, 0.35);
+      transform: translateY(-1px);
+    }
+    .stars-outer {
+      position: relative;
+      display: inline-block;
+      font-size: 1.15rem;
+      line-height: 1;
+      letter-spacing: 2px;
+    }
+    .stars-bg {
+      color: rgba(255, 255, 255, 0.22);
+    }
+    .stars-fill {
+      position: absolute;
+      top: 0;
+      left: 0;
+      white-space: nowrap;
+      overflow: hidden;
+      color: #ffd166;
+      text-shadow: 0 0 8px rgba(255, 209, 102, 0.7);
+      transition: width 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .rating-val-wrap {
+      display: flex;
+      align-items: baseline;
+      font-weight: 800;
+      font-size: 1.15rem;
+      color: #ffd166;
+    }
+    .rating-max {
+      font-size: 0.8rem;
+      color: rgba(255, 255, 255, 0.55);
+      font-weight: 600;
+      margin-left: 2px;
+    }
+    .stat-badge.pop {
+      color: #06d6a0;
+    }
+    .stat-badge.level {
+      color: #a78bfa;
+    }
+    .stat-badge.size {
+      color: #38bdf8;
+    }
+    .restaurant-title {
+      font-size: 1.3rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, #f72585, #7209b7, #4cc9f0);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      letter-spacing: 0.5px;
+    }
+
+    /* Expand Restaurant Button */
+    .expand-btn {
+      pointer-events: auto;
+      background: linear-gradient(180deg, #10b981, #059669);
+      border: 2px solid #6ee7b7;
+      color: #ffffff;
+      padding: 10px 20px;
+      font-size: 1.05rem;
+      font-weight: 700;
+      border-radius: 20px;
+      cursor: pointer;
+      box-shadow: 0 6px 16px rgba(16, 185, 129, 0.45);
+      transition: all 0.15s ease-in-out;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-family: inherit;
+      white-space: nowrap;
+      user-select: none;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+    }
+    .expand-btn:hover {
+      transform: translateY(-2px) scale(1.04);
+      box-shadow: 0 8px 24px rgba(16, 185, 129, 0.65);
+      background: linear-gradient(180deg, #34d399, #10b981);
+    }
+    .expand-btn.ready {
+      background: linear-gradient(180deg, #22c55e, #15803d);
+      border-color: #ffd166;
+      box-shadow: 0 0 18px rgba(34, 197, 94, 0.7), 0 6px 16px rgba(0, 0, 0, 0.4);
+      animation: expandReadyPulse 1.8s infinite ease-in-out;
+    }
+    @keyframes expandReadyPulse {
+      0%, 100% {
+        box-shadow: 0 0 14px rgba(34, 197, 94, 0.6), 0 6px 16px rgba(0, 0, 0, 0.4);
+      }
+      50% {
+        box-shadow: 0 0 24px rgba(74, 222, 128, 0.9), 0 8px 20px rgba(0, 0, 0, 0.5);
+      }
+    }
+    .expand-btn.locked {
+      background: linear-gradient(180deg, #059669, #065f46);
+      border-color: #34d399;
+      color: #ffffff;
+      box-shadow: 0 6px 16px rgba(5, 150, 105, 0.4);
+      opacity: 0.96;
+    }
+    .expand-btn.locked:hover {
+      transform: translateY(-2px) scale(1.03);
+      box-shadow: 0 8px 20px rgba(5, 150, 105, 0.6);
+      background: linear-gradient(180deg, #10b981, #059669);
+    }
+    .expand-badge {
+      background: rgba(0, 0, 0, 0.32);
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-size: 0.85rem;
+      font-weight: 800;
+      color: #ffd166;
+      border: 1px solid rgba(255, 209, 102, 0.35);
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    /* Bottom Action Toolbar - Positioned above Zoom Widget */
+    .bistro-bottombar {
+      position: absolute;
+      bottom: 84px;
+      left: 24px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      pointer-events: auto;
+      z-index: 50;
+    }
+
+    /* Staff Toolbar - Positioned just above Build Button */
+    .bistro-staffbar {
+      position: absolute;
+      bottom: 144px;
+      left: 24px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      pointer-events: auto;
+      z-index: 50;
+    }
+    .bistro-btn-menu {
+      background: linear-gradient(180deg, #f59e0b, #d97706);
+      border: 2px solid #fbbf24;
+      color: #ffffff;
+      padding: 10px 18px;
+      font-size: 1.05rem;
+      font-weight: 700;
+      border-radius: 20px;
+      cursor: pointer;
+      box-shadow: 0 6px 16px rgba(245, 158, 11, 0.4);
+      transition: all 0.15s ease-in-out;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      user-select: none;
+    }
+    .bistro-btn-menu:hover {
+      transform: translateY(-2px) scale(1.04);
+      box-shadow: 0 8px 22px rgba(245, 158, 11, 0.6);
+      background: linear-gradient(180deg, #fbbf24, #f59e0b);
+    }
+    .menu-badge-count {
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      padding: 2px 7px;
+      border-radius: 10px;
+      font-size: 0.85rem;
+      font-weight: 800;
+      color: #fef08a;
+    }
+
+    .bistro-btn-staff {
+      background: linear-gradient(180deg, #4361ee, #3a0ca3);
+      border: 2px solid #7209b7;
+      color: #ffffff;
+      padding: 10px 18px;
+      font-size: 1.05rem;
+      font-weight: 700;
+      border-radius: 20px;
+      cursor: pointer;
+      box-shadow: 0 6px 16px rgba(67, 97, 238, 0.4);
+      transition: all 0.15s ease-in-out;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      user-select: none;
+    }
+    .bistro-btn-staff:hover {
+      transform: translateY(-2px) scale(1.04);
+      box-shadow: 0 8px 22px rgba(67, 97, 238, 0.6);
+      background: linear-gradient(180deg, #4895ef, #4361ee);
+    }
+    .staff-badge-count {
+      background: #f72585;
+      color: white;
+      font-size: 0.75rem;
+      font-weight: 800;
+      padding: 2px 7px;
+      border-radius: 10px;
+      border: 1px solid rgba(255,255,255,0.4);
+    }
+    .bistro-btn-finance {
+      background: linear-gradient(180deg, #0284c7, #0369a1);
+      border: 2px solid #38bdf8;
+      color: #ffffff;
+      padding: 10px 18px;
+      font-size: 1.05rem;
+      font-weight: 700;
+      border-radius: 20px;
+      cursor: pointer;
+      box-shadow: 0 6px 16px rgba(2, 132, 199, 0.4);
+      transition: all 0.15s ease-in-out;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      user-select: none;
+    }
+    .bistro-btn-finance:hover {
+      transform: translateY(-2px) scale(1.04);
+      box-shadow: 0 8px 22px rgba(2, 132, 199, 0.6);
+      background: linear-gradient(180deg, #38bdf8, #0284c7);
+    }
+
+    /* Required Ingredients Pill Badges in Recipe Cards */
+    .recipe-reqs-container {
+      background: rgba(15, 23, 42, 0.65);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 8px;
+      padding: 6px 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+    .recipe-reqs-label {
+      font-size: 0.68rem;
+      text-transform: uppercase;
+      font-weight: 800;
+      color: #94a3b8;
+      letter-spacing: 0.5px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .recipe-reqs-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      margin-top: 1px;
+    }
+    .recipe-req-pill {
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 6px;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      color: #e2e8f0;
+      transition: all 0.15s ease;
+    }
+    .recipe-req-pill.satisfied {
+      background: rgba(16, 185, 129, 0.16);
+      border-color: rgba(52, 211, 153, 0.5);
+      color: #6ee7b7;
+    }
+    .recipe-req-pill.missing {
+      background: rgba(244, 63, 94, 0.14);
+      border-color: rgba(251, 113, 133, 0.4);
+      color: #fda4af;
+    }
+
+    /* Recipe Cookbook Cards */
+    .recipe-card {
+      background: rgba(22, 27, 34, 0.92);
+      border: 1.5px solid rgba(255, 255, 255, 0.12);
+      border-radius: 14px;
+      padding: 10px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      transition: all 0.2s ease;
+      position: relative;
+    }
+    .recipe-card:hover {
+      border-color: rgba(245, 158, 11, 0.55);
+      background: rgba(22, 27, 34, 0.98);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+      transform: translateY(-2px);
+    }
+    .recipe-card.locked {
+      opacity: 0.65;
+      border-style: dashed;
+      filter: grayscale(0.2);
+    }
+    .recipe-card.active-dish {
+      border-color: #10b981;
+      box-shadow: 0 4px 14px rgba(16, 185, 129, 0.25);
+    }
+    .recipe-img-box {
+      width: 44px;
+      height: 44px;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.6rem;
+      flex-shrink: 0;
+      overflow: hidden;
+    }
+    .recipe-img-box img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+    .recipe-level-badge {
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+      color: #fff;
+      font-size: 0.70rem;
+      font-weight: 800;
+      padding: 2px 6px;
+      border-radius: 6px;
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+    }
+    .recipe-progress-bar {
+      width: 100%;
+      height: 5px;
+      background: rgba(255, 255, 255, 0.12);
+      border-radius: 3px;
+      overflow: hidden;
+      margin-top: 3px;
+    }
+    .recipe-progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #f59e0b, #fbbf24);
+      border-radius: 3px;
+      transition: width 0.3s ease;
+    }
+    .btn-upgrade-recipe {
+      background: linear-gradient(180deg, #10b981, #059669);
+      border: 1px solid #34d399;
+      color: #fff;
+      font-weight: 800;
+      font-size: 0.78rem;
+      padding: 7px 8px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      white-space: nowrap;
+    }
+    .btn-upgrade-recipe:hover:not(:disabled) {
+      background: linear-gradient(180deg, #34d399, #10b981);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.35);
+    }
+    .btn-upgrade-recipe:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      filter: grayscale(0.4);
+      background: rgba(255, 255, 255, 0.08);
+      border-color: rgba(255, 255, 255, 0.12);
+      color: #94a3b8;
+    }
+    .btn-toggle-menu {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: #cbd5e1;
+      font-size: 0.78rem;
+      font-weight: 700;
+      padding: 7px 8px;
+      border-radius: 8px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+    }
+    .btn-toggle-menu:hover {
+      background: rgba(255, 255, 255, 0.16);
+      color: #fff;
+      transform: translateY(-1px);
+    }
+    .btn-toggle-menu.active {
+      background: rgba(16, 185, 129, 0.22);
+      border-color: #10b981;
+      color: #34d399;
+      font-weight: 800;
+    }
+
+    .bistro-btn {
+      background: linear-gradient(180deg, #ff7b00, #e85d04);
+      border: 2px solid #ffba08;
+      color: #ffffff;
+      padding: 10px 20px;
+      font-size: 1.05rem;
+      font-weight: 700;
+      border-radius: 20px;
+      cursor: pointer;
+      box-shadow: 0 6px 16px rgba(232, 93, 4, 0.4);
+      transition: all 0.15s ease-in-out;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      user-select: none;
+    }
+    .bistro-btn:hover {
+      transform: translateY(-2px) scale(1.04);
+      box-shadow: 0 8px 22px rgba(232, 93, 4, 0.6);
+    }
+    .bistro-btn.active {
+      background: linear-gradient(180deg, #06d6a0, #118ab2);
+      border-color: #52b788;
+    }
+
+    /* Bottom-Left Zoom Controls Widget */
+    .bistro-zoom-widget {
+      position: absolute;
+      bottom: 24px;
+      left: 24px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(15, 23, 42, 0.88);
+      backdrop-filter: blur(14px);
+      border: 1.5px solid rgba(255, 255, 255, 0.18);
+      border-radius: 28px;
+      padding: 6px 10px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45), 0 2px 6px rgba(255, 255, 255, 0.08) inset;
+      z-index: 50;
+      user-select: none;
+      pointer-events: auto;
+    }
+    .zoom-btn {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: linear-gradient(180deg, #334155, #1e293b);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: #ffffff;
+      font-size: 1.05rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3);
+      transition: all 0.15s ease-in-out;
+    }
+    .zoom-btn:hover {
+      background: linear-gradient(180deg, #ff7b00, #e85d04);
+      border-color: #ffba08;
+      transform: scale(1.08);
+      box-shadow: 0 4px 12px rgba(232, 93, 4, 0.5);
+    }
+    .zoom-btn:active {
+      transform: scale(0.94);
+    }
+    .zoom-level {
+      min-width: 48px;
+      text-align: center;
+      font-size: 0.88rem;
+      font-weight: 700;
+      color: #f8fafc;
+      letter-spacing: 0.5px;
+      cursor: pointer;
+      padding: 4px 6px;
+      border-radius: 12px;
+      transition: background 0.15s ease;
+    }
+    .zoom-level:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: #ffd166;
+    }
+
+    @media (max-width: 640px) {
+      .bistro-zoom-widget {
+        bottom: 16px;
+        left: 14px;
+        padding: 4px 8px;
+      }
+      .zoom-btn {
+        width: 32px;
+        height: 32px;
+        font-size: 0.9rem;
+      }
+      .zoom-level {
+        min-width: 40px;
+        font-size: 0.78rem;
+      }
+      .bistro-bottombar {
+        bottom: 70px;
+        left: 14px;
+        gap: 6px;
+      }
+      .bistro-staffbar {
+        bottom: 124px;
+        left: 14px;
+        gap: 6px;
+      }
+      .bistro-btn, .bistro-btn-staff {
+        padding: 8px 14px;
+        font-size: 0.95rem;
+      }
+      .build-catalog {
+        bottom: 180px;
+        max-width: 95vw;
+      }
+    }
+
+    @media (max-height: 750px) {
+      .bistro-modal {
+        max-height: 94vh;
+      }
+      .modal-header {
+        padding: 12px 20px;
+      }
+      .modal-body {
+        padding: 14px 20px 28px;
+        gap: 14px;
+      }
+      .payroll-dashboard {
+        padding: 10px 14px;
+      }
+    }
+
+    /* Modal Backdrop & Staff Modal */
+    .bistro-modal-backdrop {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(10, 14, 23, 0.75);
+      backdrop-filter: blur(8px);
+      z-index: 100;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      overflow-y: auto;
+      animation: modalFadeIn 0.2s ease-out;
+    }
+    .bistro-modal {
+      background: linear-gradient(180deg, #1e293b, #0f172a);
+      border: 1.5px solid rgba(255, 255, 255, 0.18);
+      border-radius: 24px;
+      width: 100%;
+      max-width: 680px;
+      max-height: 88vh;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6), 0 0 30px rgba(67, 97, 238, 0.2);
+      overflow: hidden;
+      animation: modalSlideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    @keyframes modalFadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    @keyframes modalSlideUp {
+      from { transform: translateY(30px) scale(0.96); opacity: 0; }
+      to { transform: translateY(0) scale(1); opacity: 1; }
+    }
+    .modal-header {
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 18px 24px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+      background: rgba(255, 255, 255, 0.03);
+    }
+    .modal-title {
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: #f8fafc;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .modal-close-btn {
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #94a3b8;
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 1.1rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s ease;
+    }
+    .modal-close-btn:hover {
+      background: #ef4444;
+      color: #fff;
+      transform: scale(1.08);
+    }
+    .modal-body {
+      flex: 1 1 auto;
+      min-height: 0;
+      padding: 20px 24px 32px;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      -webkit-overflow-scrolling: touch;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+    .modal-body::-webkit-scrollbar {
+      width: 8px;
+    }
+    .modal-body::-webkit-scrollbar-track {
+      background: rgba(255, 255, 255, 0.04);
+      border-radius: 4px;
+    }
+    .modal-body::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.25);
+      border-radius: 4px;
+    }
+    .modal-body::-webkit-scrollbar-thumb:hover {
+      background: rgba(255, 255, 255, 0.45);
+    }
+
+    /* Tactical Shift Bill Banner */
+    .payroll-dashboard {
+      background: linear-gradient(135deg, rgba(244, 63, 94, 0.15), rgba(67, 97, 238, 0.15));
+      border: 1px solid rgba(244, 63, 94, 0.35);
+      border-radius: 16px;
+      padding: 14px 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .payroll-stats-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .payroll-stat-item {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .payroll-stat-label {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      font-weight: 700;
+      color: #94a3b8;
+      letter-spacing: 0.5px;
+    }
+    .payroll-stat-val {
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: #f8fafc;
+    }
+    .payroll-warning-banner {
+      font-size: 0.8rem;
+      line-height: 1.35;
+      color: #ffd166;
+      background: rgba(0, 0, 0, 0.25);
+      padding: 8px 12px;
+      border-radius: 10px;
+      border-left: 3px solid #ffba08;
+    }
+
+    /* Roster list & cards */
+    .section-heading {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #e2e8f0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+    .staff-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .staff-card {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 14px;
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      transition: background 0.15s ease;
+    }
+    .staff-card:hover {
+      background: rgba(255, 255, 255, 0.08);
+    }
+    .staff-info-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .staff-avatar-badge {
+      font-size: 1.8rem;
+      background: rgba(255, 255, 255, 0.08);
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+    }
+    .staff-details {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .staff-name {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #f8fafc;
+    }
+    .staff-sub {
+      font-size: 0.8rem;
+      color: #94a3b8;
+    }
+    .staff-wage-badge {
+      color: #f43f5e;
+      font-weight: 700;
+      font-size: 0.85rem;
+    }
+    .btn-sack {
+      background: rgba(239, 68, 68, 0.15);
+      border: 1px solid #ef4444;
+      color: #fca5a5;
+      font-weight: 700;
+      font-size: 0.85rem;
+      padding: 6px 14px;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .btn-sack:hover {
+      background: #ef4444;
+      color: #ffffff;
+      transform: scale(1.05);
+      box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+    }
+
+    /* Hire candidates grid */
+    .hire-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
+    }
+    .hire-card {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 16px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      align-items: center;
+      text-align: center;
+      transition: all 0.15s ease;
+    }
+    .hire-card:hover {
+      border-color: #4361ee;
+      background: rgba(67, 97, 238, 0.08);
+      transform: translateY(-2px);
+    }
+    .hire-icon {
+      font-size: 2.2rem;
+      margin-bottom: 2px;
+    }
+    .hire-title {
+      font-size: 0.95rem;
+      font-weight: 800;
+      color: #f8fafc;
+    }
+    .hire-desc {
+      font-size: 0.76rem;
+      color: #94a3b8;
+      line-height: 1.3;
+      min-height: 38px;
+    }
+    .hire-cost-tag {
+      font-size: 0.85rem;
+      font-weight: 800;
+      color: #ffd166;
+    }
+    .hire-wage-tag {
+      font-size: 0.75rem;
+      color: #f43f5e;
+      font-weight: 700;
+    }
+    .btn-hire {
+      margin-top: 4px;
+      width: 100%;
+      background: linear-gradient(180deg, #10b981, #059669);
+      border: 1px solid #34d399;
+      color: white;
+      font-weight: 800;
+      font-size: 0.88rem;
+      padding: 8px 12px;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .btn-hire:hover {
+      background: linear-gradient(180deg, #34d399, #10b981);
+      transform: scale(1.03);
+      box-shadow: 0 4px 14px rgba(16, 185, 129, 0.4);
+    }
+
+    /* Build Catalog Tray */
+    .build-catalog {
+      position: absolute;
+      bottom: 144px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: none;
+      gap: 12px;
+      background: rgba(22, 27, 34, 0.92);
+      backdrop-filter: blur(14px);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 20px;
+      padding: 14px;
+      max-width: 90vw;
+      overflow-x: auto;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+      z-index: 60;
+    }
+    .catalog-item {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 14px;
+      padding: 12px;
+      min-width: 90px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: #fff;
+      transition: all 0.15s ease;
+    }
+    .catalog-item:hover {
+      background: rgba(255, 255, 255, 0.18);
+      transform: translateY(-2px);
+    }
+    .cat-tab {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #e0e1dd;
+      font-family: inherit;
+      font-size: 0.85rem;
+      font-weight: 700;
+      padding: 6px 14px;
+      border-radius: 12px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.15s ease;
+    }
+    .cat-tab:hover {
+      background: rgba(255, 255, 255, 0.18);
+      color: #fff;
+    }
+    .cat-tab.active {
+      background: linear-gradient(180deg, #ff7b00, #e85d04);
+      border-color: #ffd166;
+      color: #ffffff;
+      box-shadow: 0 4px 12px rgba(232, 93, 4, 0.4);
+    }
+    .catalog-item.selected {
+      border-color: #ffd166;
+      background: rgba(255, 209, 102, 0.25);
+    }
+    .item-title {
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+    .item-price {
+      font-size: 0.8rem;
+      color: #ffd166;
+      font-weight: 700;
+    }
+    .item-price.cash {
+      color: #34d399;
+      font-weight: 800;
+    }
+
+    .cash-pack-card {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1.5px solid rgba(255, 255, 255, 0.12);
+      border-radius: 18px;
+      padding: 18px 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      position: relative;
+      transition: all 0.18s ease;
+      gap: 8px;
+    }
+    .cash-pack-card:hover {
+      border-color: #34d399;
+      background: rgba(16, 185, 129, 0.08);
+      transform: translateY(-3px);
+      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.4);
+    }
+    .cash-pack-badge {
+      position: absolute;
+      top: -10px;
+      right: 14px;
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+      color: #ffffff;
+      font-size: 0.7rem;
+      font-weight: 800;
+      padding: 3px 8px;
+      border-radius: 8px;
+      letter-spacing: 0.5px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    }
+    .btn-buy-cash {
+      width: 100%;
+      background: linear-gradient(180deg, #10b981, #059669);
+      border: 1px solid #34d399;
+      color: #fff;
+      font-weight: 800;
+      font-size: 0.95rem;
+      padding: 10px 14px;
+      border-radius: 14px;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.35);
+      transition: all 0.15s ease;
+      font-family: inherit;
+      margin-top: 6px;
+    }
+    .btn-buy-cash:hover {
+      transform: scale(1.03);
+      background: linear-gradient(180deg, #34d399, #10b981);
+      box-shadow: 0 6px 16px rgba(16, 185, 129, 0.6);
+    }
+
+    .btn-inv-place, .btn-inv-sell, .btn-inv-sell-all {
+      transition: all 0.12s ease;
+    }
+    .btn-inv-place:hover, .btn-inv-sell:hover, .btn-inv-sell-all:hover {
+      filter: brightness(1.18);
+      transform: scale(1.02);
+    }
+
+    /* Toast notifications */
+    #toastContainer {
+      position: absolute;
+      top: 80px;
+      right: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      pointer-events: none;
+    }
+    .bistro-toast {
+      background: rgba(16, 20, 26, 0.9);
+      border: 1px solid #ffd166;
+      color: #fff;
+      padding: 8px 16px;
+      border-radius: 12px;
+      font-size: 0.9rem;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.4);
+      animation: fadeInOut 2.5s forwards;
+    }
+    @keyframes fadeInOut {
+      0% { opacity: 0; transform: translateY(-8px); }
+      15% { opacity: 1; transform: translateY(0); }
+      80% { opacity: 1; }
+      100% { opacity: 0; transform: translateY(-8px); }
+    }
+    /* Planet Coaster Inspired Financial Management Modal */
+    .finance-modal {
+      background: #f8fafc;
+      color: #1e293b;
+      border: 1.5px solid rgba(255, 255, 255, 0.4);
+      border-radius: 20px;
+      width: 100%;
+      max-width: 820px;
+      max-height: 90vh;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.65), 0 0 40px rgba(14, 165, 233, 0.25);
+      overflow: hidden;
+      font-family: inherit;
+      animation: modalSlideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .finance-status-bar {
+      background: #86efac;
+      color: #14532d;
+      font-weight: 800;
+      font-size: 0.78rem;
+      letter-spacing: 0.8px;
+      padding: 6px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      text-transform: uppercase;
+    }
+    .finance-top-header {
+      background: #f1f5f9;
+      border-bottom: 1.5px solid #e2e8f0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
+    }
+    .finance-tabs {
+      display: flex;
+      gap: 4px;
+    }
+    .finance-tab-btn {
+      background: transparent;
+      border: none;
+      border-bottom: 3px solid transparent;
+      padding: 10px 14px;
+      font-size: 0.88rem;
+      font-weight: 800;
+      color: #64748b;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s ease;
+    }
+    .finance-tab-btn:hover {
+      color: #0284c7;
+    }
+    .finance-tab-btn.active {
+      color: #0284c7;
+      border-bottom-color: #0284c7;
+      background: rgba(2, 132, 199, 0.08);
+    }
+    .finance-body {
+      display: flex;
+      flex: 1 1 auto;
+      min-height: 0;
+      overflow: hidden;
+      background: #f8fafc;
+    }
+    .finance-sidebar {
+      width: 60px;
+      background: #e2e8f0;
+      border-right: 1.5px solid #cbd5e1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 12px 6px;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+    .finance-side-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 10px;
+      border: 1.5px solid transparent;
+      background: #ffffff;
+      color: #0284c7;
+      font-size: 1.25rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+      transition: all 0.15s ease;
+    }
+    .finance-side-icon:hover {
+      transform: translateY(-1px);
+      border-color: #38bdf8;
+    }
+    .finance-side-icon.active {
+      background: #0284c7;
+      color: #ffffff;
+      box-shadow: 0 4px 10px rgba(2, 132, 199, 0.35);
+    }
+    .finance-content {
+      flex: 1 1 auto;
+      min-height: 0;
+      overflow-y: auto;
+      padding: 14px 20px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .finance-content-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1.5px solid #e2e8f0;
+      padding-bottom: 8px;
+    }
+    .finance-title-text {
+      font-size: 0.95rem;
+      font-weight: 900;
+      color: #334155;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+    .finance-range-toggles {
+      display: flex;
+      background: #e2e8f0;
+      border-radius: 8px;
+      padding: 2px;
+      gap: 2px;
+    }
+    .finance-range-btn {
+      background: transparent;
+      border: none;
+      font-size: 0.76rem;
+      font-weight: 800;
+      color: #64748b;
+      padding: 4px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    .finance-range-btn.active {
+      background: #ffffff;
+      color: #0284c7;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    .finance-table {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .finance-category-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      padding: 3px 0;
+      user-select: none;
+    }
+    .finance-cat-badge {
+      background: #bae6fd;
+      color: #0369a1;
+      font-weight: 800;
+      font-size: 0.82rem;
+      padding: 5px 12px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex: 1;
+      margin-right: 12px;
+      transition: background 0.15s ease;
+    }
+    .finance-cat-badge:hover {
+      background: #93c5fd;
+    }
+    .finance-val-pill {
+      font-family: 'Courier New', Courier, monospace;
+      font-weight: 900;
+      font-size: 0.86rem;
+      padding: 4px 12px;
+      border-radius: 8px;
+      min-width: 100px;
+      text-align: right;
+    }
+    .finance-val-pill.pos {
+      background: #dcfce7;
+      color: #15803d;
+    }
+    .finance-val-pill.neg {
+      background: #fee2e2;
+      color: #b91c1c;
+    }
+    .finance-val-pill.neutral {
+      background: #f1f5f9;
+      color: #64748b;
+    }
+    .finance-sub-rows {
+      display: flex;
+      flex-direction: column;
+      margin-bottom: 4px;
+      background: rgba(241, 245, 249, 0.45);
+      border-left: 2px solid #bae6fd;
+      border-radius: 0 8px 8px 0;
+    }
+    .finance-sub-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 4px 12px 4px 20px;
+      font-size: 0.80rem;
+      color: #475569;
+      font-weight: 600;
+      border-bottom: 1px dashed rgba(226, 232, 240, 0.8);
+    }
+    .finance-sub-val {
+      font-family: 'Courier New', Courier, monospace;
+      font-weight: 700;
+      font-size: 0.82rem;
+    }
+    .finance-sub-val.pos { color: #16a34a; }
+    .finance-sub-val.neg { color: #dc2626; }
+    .finance-sub-val.zero { color: #94a3b8; }
+    .finance-summary-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px 0;
+      margin-top: 4px;
+    }
+    .finance-summary-label-pill {
+      background: #fee2e2;
+      color: #991b1b;
+      font-weight: 900;
+      font-size: 0.84rem;
+      padding: 6px 14px;
+      border-radius: 8px;
+      flex: 1;
+      margin-right: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .finance-summary-label-pill.pos {
+      background: #dcfce7;
+      color: #166534;
+    }
+    .finance-summary-val-pill {
+      font-family: 'Courier New', Courier, monospace;
+      font-weight: 900;
+      font-size: 0.95rem;
+      padding: 6px 14px;
+      border-radius: 8px;
+      min-width: 100px;
+      text-align: right;
+    }
+    .finance-summary-val-pill.pos {
+      background: #dcfce7;
+      color: #166534;
+    }
+    .finance-summary-val-pill.neg {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    /* Advisor Insights Cards */
+    .finance-insight-card {
+      background: #ffffff;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 12px 14px;
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+    }
+    .finance-insight-card.alert {
+      border-color: #fca5a5;
+      background: #fff1f2;
+    }
+    .finance-insight-card.good {
+      border-color: #86efac;
+      background: #f0fdf4;
+    }
+    .finance-insight-icon {
+      font-size: 1.4rem;
+      flex-shrink: 0;
+    }
+    .finance-insight-title {
+      font-weight: 800;
+      font-size: 0.88rem;
+      color: #0f172a;
+    }
+    .finance-insight-desc {
+      font-size: 0.80rem;
+      color: #475569;
+      margin-top: 3px;
+      line-height: 1.4;
+    }
+
+    /* Bistro Cloud Save & Auth Topbar Card */
+    .bistro-auth-card {
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 14px;
+      background: rgba(15, 23, 42, 0.88);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      border-radius: 16px;
+      transition: all 0.2s ease;
+      position: relative;
+    }
+    .bistro-auth-card:hover {
+      border-color: rgba(56, 189, 248, 0.7);
+      background: rgba(15, 23, 42, 0.96);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 18px rgba(56, 189, 248, 0.25);
+    }
+    .auth-sync-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #94a3b8;
+      box-shadow: 0 0 8px rgba(148, 163, 184, 0.6);
+      flex-shrink: 0;
+      transition: all 0.3s ease;
+    }
+    .auth-sync-dot.synced {
+      background: #10b981;
+      box-shadow: 0 0 10px #10b981;
+    }
+    .auth-sync-dot.saving {
+      background: #f59e0b;
+      box-shadow: 0 0 10px #f59e0b;
+      animation: pulseSync 1s infinite alternate;
+    }
+    .auth-sync-dot.error {
+      background: #ef4444;
+      box-shadow: 0 0 10px #ef4444;
+    }
+    @keyframes pulseSync {
+      0% { opacity: 0.4; transform: scale(0.85); }
+      100% { opacity: 1; transform: scale(1.15); }
+    }
+    .auth-btn-icon {
+      font-size: 1.25rem;
+      line-height: 1;
+    }
+    .auth-info-wrap {
+      display: flex;
+      flex-direction: column;
+      line-height: 1.15;
+    }
+    .auth-status-title {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #94a3b8;
+      font-weight: 700;
+    }
+    .auth-user-label {
+      font-size: 0.95rem;
+      font-weight: 800;
+      color: #38bdf8;
+      max-width: 130px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .btn-quick-save {
+      background: rgba(56, 189, 248, 0.15);
+      border: 1px solid rgba(56, 189, 248, 0.4);
+      color: #38bdf8;
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.95rem;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      padding: 0;
+    }
+    .btn-quick-save:hover {
+      background: #38bdf8;
+      color: #0f172a;
+      transform: scale(1.1);
+      box-shadow: 0 2px 8px rgba(56, 189, 248, 0.5);
+    }
+
+    /* Auth Modal Specific Styles */
+    .auth-modal-box {
+      max-width: 500px;
+    }
+    .auth-modal-content {
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .auth-tabs-row {
+      display: flex;
+      background: rgba(15, 23, 42, 0.6);
+      padding: 4px;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      gap: 4px;
+    }
+    .auth-tab-pill {
+      flex: 1;
+      padding: 10px 14px;
+      border-radius: 9px;
+      background: transparent;
+      border: none;
+      color: #94a3b8;
+      font-family: inherit;
+      font-size: 0.95rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .auth-tab-pill.active {
+      background: linear-gradient(135deg, #0284c7, #0369a1);
+      color: #fff;
+      box-shadow: 0 2px 8px rgba(2, 132, 199, 0.35);
+    }
+    .auth-intro-desc {
+      font-size: 0.92rem;
+      color: #cbd5e1;
+      line-height: 1.45;
+      margin: 0;
+    }
+    .btn-google-auth {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      width: 100%;
+      padding: 12px 16px;
+      background: #ffffff;
+      color: #1f2937;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 12px;
+      font-family: inherit;
+      font-size: 0.95rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+      margin-top: 4px;
+    }
+    .btn-google-auth:hover {
+      background: #f8fafc;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+      border-color: #cbd5e1;
+    }
+    .auth-divider {
+      display: flex;
+      align-items: center;
+      text-align: center;
+      margin: 12px 0 6px 0;
+      color: #64748b;
+      font-size: 0.76rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .auth-divider::before,
+    .auth-divider::after {
+      content: '';
+      flex: 1;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+    }
+    .auth-divider span {
+      padding: 0 10px;
+    }
+    .bistro-auth-form {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .auth-input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      text-align: left;
+    }
+    .auth-input-group label {
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .auth-input-group input {
+      background: rgba(15, 23, 42, 0.7);
+      border: 1.5px solid rgba(255, 255, 255, 0.15);
+      border-radius: 12px;
+      padding: 12px 14px;
+      color: #fff;
+      font-family: inherit;
+      font-size: 1rem;
+      outline: none;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+    .auth-input-group input:focus {
+      border-color: #38bdf8;
+      box-shadow: 0 0 12px rgba(56, 189, 248, 0.35);
+    }
+    .auth-status-msg {
+      padding: 10px 14px;
+      border-radius: 10px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      line-height: 1.4;
+    }
+    .auth-status-msg.error {
+      background: rgba(239, 68, 68, 0.15);
+      border: 1px solid rgba(239, 68, 68, 0.4);
+      color: #fca5a5;
+    }
+    .auth-status-msg.success {
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid rgba(16, 185, 129, 0.4);
+      color: #6ee7b7;
+    }
+    .auth-status-msg.info {
+      background: rgba(56, 189, 248, 0.15);
+      border: 1px solid rgba(56, 189, 248, 0.4);
+      color: #7dd3fc;
+    }
+    .btn-auth-action {
+      background: linear-gradient(135deg, #0284c7, #0284c7 40%, #0369a1);
+      border: 1px solid rgba(56, 189, 248, 0.5);
+      border-radius: 12px;
+      padding: 13px 18px;
+      color: #fff;
+      font-family: inherit;
+      font-size: 1.05rem;
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: 0 4px 14px rgba(2, 132, 199, 0.4);
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .btn-auth-action:hover {
+      background: linear-gradient(135deg, #0ea5e9, #0284c7);
+      transform: translateY(-1px);
+      box-shadow: 0 6px 18px rgba(2, 132, 199, 0.6);
+    }
+    .btn-auth-action:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+    .auth-guest-notice {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 10px;
+      padding: 10px 14px;
+      font-size: 0.82rem;
+      color: #94a3b8;
+    }
+
+    /* Logged In View Styles */
+    .user-hero-card {
+      background: linear-gradient(135deg, rgba(2, 132, 199, 0.15), rgba(15, 23, 42, 0.4));
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      border-radius: 16px;
+      padding: 16px 18px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .user-avatar-circle {
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #38bdf8, #0284c7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.8rem;
+      box-shadow: 0 4px 12px rgba(2, 132, 199, 0.4);
+      flex-shrink: 0;
+    }
+    .user-hero-info {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      text-align: left;
+    }
+    .user-name-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .user-display-name {
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: #fff;
+      margin: 0;
+    }
+    .user-cloud-badge {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: #34d399;
+      background: rgba(16, 185, 129, 0.2);
+      border: 1px solid rgba(16, 185, 129, 0.4);
+      padding: 2px 8px;
+      border-radius: 12px;
+    }
+    .user-email-text {
+      font-size: 0.88rem;
+      color: #94a3b8;
+      margin: 0;
+    }
+    .cloud-status-card {
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 14px;
+      padding: 14px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .cloud-status-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.85rem;
+    }
+    .cs-label {
+      font-weight: 700;
+      color: #cbd5e1;
+    }
+    .cs-time {
+      font-weight: 600;
+      color: #38bdf8;
+    }
+    .cloud-stats-mini {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      padding-top: 6px;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .cs-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+    }
+    .cs-val {
+      font-weight: 800;
+      font-size: 0.95rem;
+      color: #fff;
+    }
+    .cs-name {
+      font-size: 0.72rem;
+      color: #94a3b8;
+      text-transform: uppercase;
+    }
+    .auth-actions-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    @media (max-width: 500px) {
+      .auth-actions-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+    .btn-cloud-card {
+      padding: 12px 14px;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      cursor: pointer;
+      font-family: inherit;
+      text-align: left;
+      transition: all 0.2s ease;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+    }
+    .btn-cloud-card.primary {
+      background: linear-gradient(135deg, rgba(2, 132, 199, 0.3), rgba(15, 23, 42, 0.8));
+      border-color: rgba(56, 189, 248, 0.4);
+      color: #fff;
+    }
+    .btn-cloud-card.primary:hover {
+      background: linear-gradient(135deg, rgba(2, 132, 199, 0.5), rgba(15, 23, 42, 0.9));
+      border-color: #38bdf8;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 14px rgba(2, 132, 199, 0.35);
+    }
+    .btn-cloud-card.secondary {
+      background: rgba(15, 23, 42, 0.6);
+      color: #cbd5e1;
+    }
+    .btn-cloud-card.secondary:hover {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: rgba(255, 255, 255, 0.25);
+      color: #fff;
+      transform: translateY(-1px);
+    }
+    .btn-cc-icon {
+      font-size: 1.4rem;
+      line-height: 1;
+      flex-shrink: 0;
+    }
+    .btn-cc-text {
+      display: flex;
+      flex-direction: column;
+      line-height: 1.2;
+    }
+    .btn-cc-text strong {
+      font-size: 0.92rem;
+    }
+    .btn-cc-text small {
+      font-size: 0.72rem;
+      color: #94a3b8;
+    }
+    .auth-logout-row {
+      display: flex;
+      justify-content: flex-end;
+      padding-top: 6px;
+    }
+    .btn-auth-logout {
+      background: rgba(239, 68, 68, 0.12);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      color: #fca5a5;
+      font-family: inherit;
+      font-size: 0.88rem;
+      font-weight: 700;
+      padding: 8px 16px;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .btn-auth-logout:hover {
+      background: rgba(239, 68, 68, 0.25);
+      border-color: #ef4444;
+      color: #fff;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="bistroCanvas"></canvas>
+
+  <!-- Topbar HUD with Restaurant City Leveling and Expansion -->
+  <div class="bistro-topbar">
+    <div class="hud-card">
+      <div class="restaurant-title">☕ Bistro Town</div>
+      <div class="stat-badge level">🧑‍🍳 Lv.<span id="levelVal">1</span> <span style="font-size: 0.85rem; color: #cbd5e1; font-weight: 600;">(<span id="xpVal">0</span>/<span id="nextXpVal">150</span> XP)</span></div>
+    </div>
+
+    <!-- Bistro Cloud Save & Account HUD Card -->
+    <div class="hud-card bistro-auth-card" id="btnBistroAuth" title="Account & Cloud Save - Click to Sign In or Manage Cloud Saves">
+      <div class="auth-sync-dot" id="authSyncDot"></div>
+      <span class="auth-btn-icon" id="authBtnIcon">☁️</span>
+      <div class="auth-info-wrap">
+        <span class="auth-status-title" id="authStatusTitle">Save Game</span>
+        <span class="auth-user-label" id="authUserLabel">Guest (Local)</span>
+      </div>
+      <button class="btn-quick-save" id="btnQuickSave" title="Quick Save Now">💾</button>
+    </div>
+
+    <div class="hud-card">
+      <div class="stat-badge coins">🪙 <span id="coinsVal">80</span></div>
+      <div class="stat-badge cash">💵 <span id="cashVal">25</span> <button id="btnOpenCashStore" class="btn-add-cash" title="Buy Cash with Real Money">+</button></div>
+      <div class="stat-badge rating-badge" id="btnRatingReview" title="Bistro Star Rating (0.5 to 5.0 Stars) - Click to see rating guide & tips">
+        <div class="stars-outer">
+          <div class="stars-bg">★★★★★</div>
+          <div class="stars-fill" id="starsFill" style="width: 10%;">★★★★★</div>
+        </div>
+        <div class="rating-val-wrap">
+          <span class="rating-val" id="ratingVal">0.5</span><span class="rating-max">/5.0</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Build mode catalog tray -->
+  <div class="build-catalog" id="buildCatalog" style="display: none; flex-direction: column; width: auto; max-width: 95vw;">
+    <!-- Category Tabs Bar -->
+    <div style="display: flex; gap: 8px; width: 100%; border-bottom: 1px solid rgba(255,255,255,0.12); padding-bottom: 10px; margin-bottom: 12px; align-items: center; justify-content: space-between; overflow-x: auto;">
+      <div id="shopCategoryTabs" style="display: flex; gap: 6px;">
+        <button class="cat-tab active" data-cat="all">🌟 All</button>
+        <button class="cat-tab" data-cat="cash" style="background: rgba(16, 185, 129, 0.22); border-color: #34d399; color: #34d399; font-weight: 800;">💎 VIP Cash</button>
+        <button class="cat-tab" data-cat="stove">🍳 Stoves</button>
+        <button class="cat-tab" data-cat="table">🍽️ Tables</button>
+        <button class="cat-tab" data-cat="chair">🪑 Chairs</button>
+        <button class="cat-tab" data-cat="decor">🪴 Decor</button>
+        <button class="cat-tab" data-cat="wall">🖼️ Wallpaper</button>
+        <button class="cat-tab" data-cat="window">🪟 Windows</button>
+        <button class="cat-tab" data-cat="door">🚪 Doors</button>
+        <button class="cat-tab" data-cat="floor">🧱 Flooring</button>
+      </div>
+      <button class="cat-tab" id="invTabBtn" style="background: rgba(255, 209, 102, 0.2); border-color: #ffd166; color: #ffd166;">🎒 Inventory (<span id="invCountText">0</span>)</button>
+    </div>
+    
+    <!-- Item grids -->
+    <div id="catalogList" style="display: flex; gap: 12px; overflow-x: auto; padding-bottom: 4px;"></div>
+    <div id="inventoryList" style="display: none; gap: 12px; overflow-x: auto; padding-bottom: 4px;"></div>
+  </div>
+
+  <!-- Staff, Menu & Finance Bar - Positioned just above Build button -->
+  <div class="bistro-staffbar">
+    <button class="bistro-btn-menu" id="btnMenuBook" title="Master Chef Cookbook & Daily Menu">
+      📖 Menu <span class="menu-badge-count" id="activeMenuCountBadge">4</span>
+    </button>
+    <button class="bistro-btn-staff" id="btnStaff" title="Manage Staff, Hire, & Sack">
+      👔 Staff <span class="staff-badge-count" id="staffCountBadge">2</span>
+    </button>
+    <button class="bistro-btn-finance" id="btnFinance" title="Financial Statement, P&L, & Cost Breakdown">
+      📊 Finances
+    </button>
+  </div>
+
+  <!-- Bottom toolbar with classic Restaurant City Build tools -->
+  <div class="bistro-bottombar">
+    <button class="bistro-btn" id="btnBuild">🔨 Build</button>
+    <div id="buildToolsGroup" style="display: none; gap: 10px;">
+      <button class="bistro-btn tool-btn" id="btnToolMove" style="background: linear-gradient(180deg, #3a86ff, #00509d); border-color: #64dfdf;">✋ Move</button>
+      <button class="bistro-btn tool-btn" id="btnToolRotate" style="background: linear-gradient(180deg, #ffb703, #fb8500); border-color: #ffd166;">🔄 Rotate</button>
+      <button class="bistro-btn tool-btn" id="btnToolRemove" style="background: linear-gradient(180deg, #ef233c, #d90429); border-color: #ff4d6d;">📦 Remove</button>
+      <button class="bistro-btn expand-btn" id="btnExpandBistro">🏗️ Expand</button>
+    </div>
+  </div>
+
+  <!-- Bottom-Left Zoom Controls Widget -->
+  <div class="bistro-zoom-widget" id="zoomWidget">
+    <button class="zoom-btn" id="btnZoomIn" title="Zoom In (+)">➕</button>
+    <div class="zoom-level" id="zoomLevelDisplay" title="Click to Reset Zoom (100%)">100%</div>
+    <button class="zoom-btn" id="btnZoomOut" title="Zoom Out (−)">➖</button>
+  </div>
+
+  <!-- Staff Management & Tactical Payroll Modal -->
+  <div class="bistro-modal-backdrop" id="staffModalBackdrop">
+    <div class="bistro-modal">
+      <div class="modal-header">
+        <div class="modal-title">👔 Staff & Shift Payroll</div>
+        <button class="modal-close-btn" id="btnCloseStaffModal" title="Close Modal">✕</button>
+      </div>
+      <div class="modal-body">
+        <!-- Tactical Shift Bill Dashboard -->
+        <div class="payroll-dashboard">
+          <div class="payroll-stats-row">
+            <div class="payroll-stat-item">
+              <span class="payroll-stat-label">Active Staff</span>
+              <span class="payroll-stat-val" id="modalStaffCount">2 Members</span>
+            </div>
+            <div class="payroll-stat-item">
+              <span class="payroll-stat-label">Shift Wage Bill</span>
+              <span class="payroll-stat-val" style="color: #f43f5e;">-<span id="modalShiftBill">13</span> 🪙 / 60s</span>
+            </div>
+            <div class="payroll-stat-item">
+              <span class="payroll-stat-label">Next Payday</span>
+              <span class="payroll-stat-val" style="color: #ffd166;" id="modalNextPayday">60s</span>
+            </div>
+          </div>
+          <div class="payroll-warning-banner">
+            ⚠️ <b>Tactical Note:</b> Wages are deducted automatically every 60s. Hiring too much staff too soon will drain your treasury! If you cannot pay, your rating drops by <b>-0.5 ⭐</b>!
+          </div>
+        </div>
+
+        <!-- Active Roster Section -->
+        <div>
+          <div class="section-heading">
+            <span>Current Roster</span>
+            <span style="font-size: 0.8rem; color: #94a3b8; font-weight: 500;">Sack underperforming or costly staff anytime</span>
+          </div>
+          <div class="staff-grid" id="staffListContainer">
+            <!-- Dynamically populated -->
+          </div>
+        </div>
+
+        <!-- Recruitment Agency Section -->
+        <div>
+          <div class="section-heading">
+            <span>Hire New Staff</span>
+            <span style="font-size: 0.8rem; color: #94a3b8; font-weight: 500;">Hire specialists to expand capacity</span>
+          </div>
+          <div class="hire-grid">
+            <!-- Line Cook -->
+            <div class="hire-card">
+              <div class="hire-icon">🍳</div>
+              <div class="hire-title">Line Cook</div>
+              <div class="hire-desc">Cooks orders simultaneously at available stoves. Speeds up food service.</div>
+              <div class="hire-cost-tag">Hire: 25 🪙</div>
+              <div class="hire-wage-tag">Wage: 8 🪙/shift</div>
+              <button class="btn-hire" id="btnHireChef" data-role="chef">➕ Hire Cook</button>
+            </div>
+            <!-- Waiter -->
+            <div class="hire-card">
+              <div class="hire-icon">🍽️</div>
+              <div class="hire-title">Waiter</div>
+              <div class="hire-desc">Takes diner orders and delivers cooked plates to tables promptly.</div>
+              <div class="hire-cost-tag">Hire: 18 🪙</div>
+              <div class="hire-wage-tag">Wage: 5 🪙/shift</div>
+              <button class="btn-hire" id="btnHireWaiter" data-role="waiter">➕ Hire Waiter</button>
+            </div>
+            <!-- Cleaner -->
+            <div class="hire-card">
+              <div class="hire-icon">🧹</div>
+              <div class="hire-title">Table Cleaner</div>
+              <div class="hire-desc">Cleans dirty tables left after diners finish eating (+0.02 ⭐ rating per clean).</div>
+              <div class="hire-cost-tag">Hire: 14 🪙</div>
+              <div class="hire-wage-tag">Wage: 4 🪙/shift</div>
+              <button class="btn-hire" id="btnHireCleaner" data-role="cleaner">➕ Hire Cleaner</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Real Money Cash Store Modal -->
+  <div class="bistro-modal-backdrop" id="cashStoreModalBackdrop">
+    <div class="bistro-modal" style="max-width: 740px;">
+      <div class="modal-header">
+        <div class="modal-title">💵 Bistro Bank - Buy Cash with Real Money</div>
+        <button class="modal-close-btn" id="btnCloseCashStoreModal" title="Close Modal">✕</button>
+      </div>
+      <div class="modal-body">
+        <!-- Current Cash Balance & Info -->
+        <div style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(6, 214, 160, 0.1)); border: 1.5px solid #34d399; border-radius: 18px; padding: 16px 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+          <div>
+            <div style="font-size: 0.8rem; text-transform: uppercase; color: #94a3b8; font-weight: 700;">Current Balance</div>
+            <div style="font-size: 1.8rem; font-weight: 800; color: #34d399; display: flex; align-items: center; gap: 8px;">💵 <span id="storeModalCashVal">25</span> Cash</div>
+          </div>
+          <div style="font-size: 0.85rem; color: #e2e8f0; max-width: 380px; line-height: 1.4;">
+            ✨ Use <b>Bistro Cash</b> to acquire exclusive luxury VIP appliances, golden royal tables, and prestigious decor in the shop!
+          </div>
+        </div>
+
+        <!-- Cash Packs Grid -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 16px; margin-top: 6px;">
+          <!-- Pack 1 -->
+          <div class="cash-pack-card">
+            <div style="font-size: 2.6rem;">💵</div>
+            <div style="font-size: 1.15rem; font-weight: 800; color: #f8fafc;">50 Cash</div>
+            <div style="font-size: 0.8rem; color: #94a3b8; min-height: 38px;">Handful of bills. Perfect for acquiring your first VIP table or custom neon decor.</div>
+            <div style="font-size: 1.25rem; font-weight: 800; color: #ffd166; margin-top: 4px;">$1.99</div>
+            <button class="btn-buy-cash" data-cash="50" data-cost="1.99" data-name="Handful of Cash">💳 Buy for $1.99</button>
+          </div>
+
+          <!-- Pack 2 -->
+          <div class="cash-pack-card" style="border-color: #3b82f6;">
+            <div class="cash-pack-badge" style="background: linear-gradient(135deg, #3b82f6, #1d4ed8);">POPULAR</div>
+            <div style="font-size: 2.6rem;">💼</div>
+            <div style="font-size: 1.15rem; font-weight: 800; color: #f8fafc;">150 Cash <span style="font-size: 0.8rem; color: #34d399;">(+25 Bonus)</span></div>
+            <div style="font-size: 0.8rem; color: #94a3b8; min-height: 38px;">Enough to fully furnish a prestigious VIP dining section with golden thrones.</div>
+            <div style="font-size: 1.25rem; font-weight: 800; color: #ffd166; margin-top: 4px;">$4.99</div>
+            <button class="btn-buy-cash" data-cash="150" data-cost="4.99" data-name="Stack of Cash">💳 Buy for $4.99</button>
+          </div>
+
+          <!-- Pack 3 -->
+          <div class="cash-pack-card" style="border-color: #f59e0b; background: rgba(245, 158, 11, 0.06);">
+            <div class="cash-pack-badge">BEST VALUE</div>
+            <div style="font-size: 2.6rem;">🏦</div>
+            <div style="font-size: 1.15rem; font-weight: 800; color: #f8fafc;">450 Cash <span style="font-size: 0.8rem; color: #34d399;">(+100 Bonus)</span></div>
+            <div style="font-size: 0.8rem; color: #94a3b8; min-height: 38px;">Equip your kitchen with high-speed Royal Ranges, fountains, and galaxy walls!</div>
+            <div style="font-size: 1.25rem; font-weight: 800; color: #ffd166; margin-top: 4px;">$12.99</div>
+            <button class="btn-buy-cash" data-cash="450" data-cost="12.99" data-name="Briefcase of Cash">💳 Buy for $12.99</button>
+          </div>
+
+          <!-- Pack 4 -->
+          <div class="cash-pack-card" style="border-color: #ec4899; background: rgba(236, 72, 153, 0.06);">
+            <div class="cash-pack-badge" style="background: linear-gradient(135deg, #ec4899, #be185d);">ROYAL</div>
+            <div style="font-size: 2.6rem;">👑</div>
+            <div style="font-size: 1.15rem; font-weight: 800; color: #f8fafc;">1,200 Cash <span style="font-size: 0.8rem; color: #34d399;">(+350 Bonus)</span></div>
+            <div style="font-size: 0.8rem; color: #94a3b8; min-height: 38px;">Ultimate luxury tycoon treasury. Build the most opulent 5-star palace in the city!</div>
+            <div style="font-size: 1.25rem; font-weight: 800; color: #ffd166; margin-top: 4px;">$29.99</div>
+            <button class="btn-buy-cash" data-cash="1200" data-cost="29.99" data-name="Vault of Cash">💳 Buy for $29.99</button>
+          </div>
+        </div>
+
+        <div style="text-align: center; font-size: 0.78rem; color: #64748b; margin-top: 10px;">
+          🔒 Secure 256-bit encrypted checkout. Instantly credited to your restaurant.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Star Rating & Critic Review Modal -->
+  <div class="bistro-modal-backdrop" id="ratingModalBackdrop">
+    <div class="bistro-modal" style="max-width: 580px;">
+      <div class="modal-header">
+        <div class="modal-title">⭐ Bistro Star Rating & Critic Guide</div>
+        <button class="modal-close-btn" id="btnCloseRatingModal" title="Close Modal">✕</button>
+      </div>
+      <div class="modal-body">
+        <!-- Current Rating Card with Prestige Cap -->
+        <div style="background: linear-gradient(135deg, rgba(255, 209, 102, 0.18), rgba(245, 158, 11, 0.08)); border: 1.5px solid rgba(255, 209, 102, 0.45); border-radius: 18px; padding: 18px 22px; display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap;">
+          <div>
+            <div style="font-size: 0.82rem; text-transform: uppercase; color: #94a3b8; font-weight: 700; letter-spacing: 0.5px;">Current Rating & Built Prestige Cap</div>
+            <div style="display: flex; align-items: baseline; gap: 8px; margin-top: 4px;">
+              <span style="font-size: 2.2rem; font-weight: 800; color: #ffd166;" id="modalRatingVal">0.8</span>
+              <span style="font-size: 1.1rem; color: #cbd5e1; font-weight: 700;">/ <span id="modalMaxPotentialVal" style="color: #38bdf8;">0.9</span> ⭐ Cap</span>
+              <span style="font-size: 0.85rem; color: #64748b;">(Max 5.0)</span>
+            </div>
+            <div style="font-size: 1.3rem; letter-spacing: 3px; margin-top: 2px;" id="modalStarsTrack">
+              <span style="color: #ffd166;">★</span><span style="color: rgba(255,255,255,0.2);">★★★★</span>
+            </div>
+          </div>
+          <div style="font-size: 0.84rem; color: #e2e8f0; max-width: 270px; line-height: 1.45; background: rgba(15, 23, 42, 0.5); padding: 10px 14px; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.1);">
+            🔒 <b>Prestige Cap Active:</b> Stars cannot rise higher without building more decor, adding dining sets, expanding, or upgrading recipes!
+          </div>
+        </div>
+
+        <!-- Built Prestige Breakdown Grid -->
+        <div style="margin-top: 16px; background: rgba(15, 23, 42, 0.65); border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 16px; padding: 14px 18px;">
+          <div style="font-size: 0.88rem; font-weight: 800; color: #38bdf8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;">
+            <span>🏛️ Built Prestige Breakdown</span>
+            <span style="font-size: 0.76rem; color: #94a3b8; font-weight: 600;">(What Sets Your Maximum Stars)</span>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 0.82rem;">
+            <div style="background: rgba(255, 255, 255, 0.04); padding: 8px 12px; border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.06); display: flex; justify-content: space-between;">
+              <span style="color: #cbd5e1;">Base Starting Diner:</span>
+              <span style="font-weight: 700; color: #ffd166;">+0.50 ⭐</span>
+            </div>
+            <div style="background: rgba(255, 255, 255, 0.04); padding: 8px 12px; border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.06); display: flex; justify-content: space-between;">
+              <span style="color: #cbd5e1;">🏗️ Expansion Size:</span>
+              <span style="font-weight: 700; color: #38bdf8;" id="prestigeExpansionVal">+0.00 ⭐</span>
+            </div>
+            <div style="background: rgba(255, 255, 255, 0.04); padding: 8px 12px; border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.06); display: flex; justify-content: space-between;">
+              <span style="color: #cbd5e1;">🪑 Dining Sets (Table+2 Chairs):</span>
+              <span style="font-weight: 700; color: #38bdf8;" id="prestigeSeatingVal">+0.08 ⭐</span>
+            </div>
+            <div style="background: rgba(255, 255, 255, 0.04); padding: 8px 12px; border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.06); display: flex; justify-content: space-between;">
+              <span style="color: #cbd5e1;">🌿 Decor, Art & Windows:</span>
+              <span style="font-weight: 700; color: #38bdf8;" id="prestigeDecorVal">+0.10 ⭐</span>
+            </div>
+            <div style="background: rgba(255, 255, 255, 0.04); padding: 8px 12px; border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.06); display: flex; justify-content: space-between;">
+              <span style="color: #cbd5e1;">🎨 Wallpapers & Custom Floors:</span>
+              <span style="font-weight: 700; color: #38bdf8;" id="prestigeWallVal">+0.00 ⭐</span>
+            </div>
+            <div style="background: rgba(255, 255, 255, 0.04); padding: 8px 12px; border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.06); display: flex; justify-content: space-between;">
+              <span style="color: #cbd5e1;">🍲 Culinary Recipe Upgrades:</span>
+              <span style="font-weight: 700; color: #38bdf8;" id="prestigeCulinaryVal">+0.00 ⭐</span>
+            </div>
+            <div style="background: rgba(255, 255, 255, 0.04); padding: 8px 12px; border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.06); display: flex; justify-content: space-between; grid-column: span 2;">
+              <span style="color: #cbd5e1;">🍽️ Menu Variety (Courses active):</span>
+              <span style="font-weight: 700; color: #38bdf8;" id="prestigeDiversityVal">+0.20 ⭐</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Service & Operations Rules Grid -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 16px;">
+          <!-- Boosts -->
+          <div style="background: rgba(34, 197, 94, 0.08); border: 1px solid rgba(34, 197, 94, 0.3); border-radius: 14px; padding: 14px;">
+            <div style="font-size: 0.92rem; font-weight: 800; color: #4ade80; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+              <span>📈 Daily Service Boosts (Up to Cap)</span>
+            </div>
+            <ul style="list-style: none; padding: 0; margin: 0; font-size: 0.82rem; color: #cbd5e1; display: flex; flex-direction: column; gap: 6px;">
+              <li>🍽️ <b>Satisfied Diners:</b> Nudges rating towards cap</li>
+              <li>🧹 <b>Clean Tables:</b> Steady hygiene boost</li>
+              <li>🪙 <b>Prompt Tips:</b> Quick service bonus</li>
+              <li>🎖️ <b>Level Up:</b> Reputation milestone boost</li>
+            </ul>
+          </div>
+
+          <!-- Penalties -->
+          <div style="background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 14px; padding: 14px;">
+            <div style="font-size: 0.92rem; font-weight: 800; color: #f87171; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+              <span>📉 Service Penalties</span>
+            </div>
+            <ul style="list-style: none; padding: 0; margin: 0; font-size: 0.82rem; color: #cbd5e1; display: flex; flex-direction: column; gap: 6px;">
+              <li>🚨 <b>Wage Deficit:</b> -0.50 ⭐ for unpaid staff</li>
+              <li>⏳ <b>Slow Waiters:</b> -0.06 ⭐ if orders take too long</li>
+              <li>🍳 <b>Slow Kitchen:</b> -0.08 ⭐ if food delayed</li>
+              <li>🍂 <b>Ignored Tips:</b> -0.02 ⭐ if tip coin expires</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- 5-Star Milestone Perk -->
+        <div style="margin-top: 16px; background: rgba(255, 209, 102, 0.1); border: 1px dashed rgba(255, 209, 102, 0.4); border-radius: 14px; padding: 12px 16px; font-size: 0.84rem; color: #fde047; text-align: center;">
+          🏆 <b>5.0 Star Goal:</b> Expand to maximum room, place luxury decor, and master all recipe ingredients to unlock legendary 5-Star status!
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recipe Cookbook & Menu Management Modal -->
+  <div class="bistro-modal-backdrop" id="cookbookModalBackdrop">
+    <div class="bistro-modal" style="max-width: 880px; max-height: 92vh;">
+      <div class="modal-header">
+        <div class="modal-title">📖 Master Chef Cookbook & Daily Menu</div>
+        <button class="modal-close-btn" id="btnCloseCookbookModal" title="Close Modal">✕</button>
+      </div>
+      <div class="modal-body" style="padding: 14px 20px 24px; gap: 10px;">
+        <!-- Compact Overview Header -->
+        <div style="background: linear-gradient(135deg, rgba(245, 158, 11, 0.16), rgba(217, 119, 6, 0.08)); border: 1.5px solid rgba(245, 158, 11, 0.35); border-radius: 14px; padding: 10px 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+          <div style="display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap;">
+            <span style="font-size: 0.78rem; text-transform: uppercase; color: #94a3b8; font-weight: 800; letter-spacing: 0.5px;">Culinary Mastery</span>
+            <span style="font-size: 1.3rem; font-weight: 800; color: #ffd166;" id="cookbookActiveCountText">4 Dishes on Menu</span>
+            <span style="font-size: 0.85rem; color: #cbd5e1; font-weight: 600;" id="cookbookTotalServingsText">0 Meals Served</span>
+          </div>
+          <div style="font-size: 0.82rem; color: #e2e8f0; line-height: 1.35;">
+            ✨ Serve diners & collect tips to gather ingredients! Max <b>Lv. 10</b>.
+          </div>
+        </div>
+
+        <!-- Category Tabs -->
+        <div style="display: flex; gap: 8px; border-bottom: 1px solid rgba(255,255,255,0.12); padding-bottom: 8px; overflow-x: auto;">
+          <button class="cat-tab active" data-recipe-cat="all">🌟 All Dishes</button>
+          <button class="cat-tab" data-recipe-cat="starter">🥣 Starters</button>
+          <button class="cat-tab" data-recipe-cat="main">🍔 Mains</button>
+          <button class="cat-tab" data-recipe-cat="dessert">🍨 Desserts</button>
+          <button class="cat-tab" data-recipe-cat="drink">☕ Drinks</button>
+        </div>
+
+        <!-- Recipe Cards Grid: smooth single-container scroll -->
+        <div id="recipeCardsGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(245px, 1fr)); gap: 12px; margin-top: 4px; padding-bottom: 20px;">
+          <!-- Dynamically populated -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Planet Coaster Style Financial Management Modal -->
+  <div class="bistro-modal-backdrop" id="financeModalBackdrop">
+    <div class="finance-modal">
+      <!-- Status Bar Banner -->
+      <div class="finance-status-bar">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span>🟢 BISTRO STATUS: OPEN FOR SERVICE</span>
+        </div>
+        <button class="modal-close-btn" id="btnCloseFinanceModal" title="Close Finances" style="width: 26px; height: 26px; font-size: 0.9rem; background: rgba(0,0,0,0.15); color: #14532d; border-color: rgba(0,0,0,0.2);">✕</button>
+      </div>
+
+      <!-- Top Tab Navigation -->
+      <div class="finance-top-header">
+        <div class="finance-tabs">
+          <button class="finance-tab-btn active" data-fin-tab="balance">
+            <span>💲</span> Finances & P&L
+          </button>
+          <button class="finance-tab-btn" data-fin-tab="advice">
+            <span>💡</span> Where to Stop Spending
+          </button>
+          <button class="finance-tab-btn" data-fin-tab="margin">
+            <span>📈</span> Operating Margins
+          </button>
+        </div>
+      </div>
+
+      <!-- Main Body with Sidebar -->
+      <div class="finance-body">
+        <!-- Planet Coaster Left Icon Column -->
+        <div class="finance-sidebar">
+          <button class="finance-side-icon active" data-fin-view="balance" title="Balance & Statement">💵</button>
+          <button class="finance-side-icon" data-fin-view="costs" title="Cost Breakdown">📉</button>
+          <button class="finance-side-icon" data-fin-view="insights" title="Spending Advisor">💡</button>
+        </div>
+
+        <!-- Center Content Pane -->
+        <div class="finance-content" id="financeContentPane">
+          <!-- Dynamically populated by renderFinances() -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bistro Cloud Save & Account Modal -->
+  <div class="bistro-modal-backdrop" id="bistroAuthModalBackdrop">
+    <div class="bistro-modal auth-modal-box">
+      <div class="modal-header">
+        <div class="modal-title">
+          <span>☁️</span> <span id="authModalHeaderTitle">Cloud Save & Account</span>
+        </div>
+        <button class="modal-close-btn" id="btnCloseAuthModal" title="Close">✕</button>
+      </div>
+
+      <div class="auth-modal-content">
+        <!-- Logged Out Container -->
+        <div id="authLoggedOutView" class="auth-view-pane">
+          <div class="auth-tabs-row">
+            <button class="auth-tab-pill active" id="btnTabSignIn" type="button">Sign In</button>
+            <button class="auth-tab-pill" id="btnTabSignUp" type="button">Create Account</button>
+          </div>
+
+          <p class="auth-intro-desc" id="authIntroText" style="margin-top: 12px; margin-bottom: 12px;">
+            Sign in to sync your restaurant layout, Michelin star rating, coins, and staff across all your devices with Genesis Cloud!
+          </p>
+
+          <!-- One-Click Google Authentication -->
+          <button type="button" class="btn-google-auth" id="btnGoogleAuth">
+            <svg width="18" height="18" viewBox="0 0 24 24" style="flex-shrink:0;">
+              <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+              <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+              <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+              <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+            </svg>
+            <span id="btnGoogleAuthText">Continue with Google</span>
+          </button>
+
+          <div class="auth-divider">
+            <span>or continue with email</span>
+          </div>
+
+          <form id="bistroAuthForm" class="bistro-auth-form">
+            <div class="auth-input-group" id="groupUsername" style="display: none;">
+              <label for="inputAuthUsername">Chef / Restaurant Name</label>
+              <input type="text" id="inputAuthUsername" placeholder="e.g. Chef Marco" autocomplete="nickname">
+            </div>
+
+            <div class="auth-input-group">
+              <label for="inputAuthEmail">Email Address</label>
+              <input type="email" id="inputAuthEmail" placeholder="chef@example.com" required autocomplete="email">
+            </div>
+
+            <div class="auth-input-group">
+              <label for="inputAuthPassword">Password</label>
+              <input type="password" id="inputAuthPassword" placeholder="••••••••" required minlength="6" autocomplete="current-password">
+            </div>
+
+            <div class="auth-status-msg" id="authStatusMsg" style="display: none;"></div>
+
+            <button type="submit" class="btn-auth-action" id="btnAuthSubmit">
+              <span id="btnAuthSubmitText">Sign In to Bistro Cloud</span>
+            </button>
+          </form>
+
+          <div class="auth-guest-notice" style="margin-top: 12px;">
+            <span>🎮 <strong>Guest Mode Active:</strong> Your restaurant is currently saved locally in this browser. Creating an account will automatically back up your current progress to the cloud.</span>
+          </div>
+        </div>
+
+        <!-- Logged In Container -->
+        <div id="authLoggedInView" class="auth-view-pane" style="display: none;">
+          <div class="user-hero-card">
+            <div class="user-avatar-circle">🧑‍🍳</div>
+            <div class="user-hero-info">
+              <div class="user-name-row">
+                <h3 class="user-display-name" id="userDisplayName">Chef Pioneer</h3>
+                <span class="user-cloud-badge">🟢 Dual-Save: Local + Cloud</span>
+              </div>
+              <p class="user-email-text" id="userDisplayEmail">chef@example.com</p>
+            </div>
+          </div>
+
+          <!-- Dual-Save Architecture Indicator -->
+          <div style="display: flex; gap: 8px; margin-top: 10px; font-size: 0.78rem;">
+            <div style="flex: 1; background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 8px; padding: 6px 10px; color: #7dd3fc;">
+              💾 <strong>Local Save:</strong> Instant (0ms, offline)
+            </div>
+            <div style="flex: 1; background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.25); border-radius: 8px; padding: 6px 10px; color: #6ee7b7;">
+              ☁️ <strong>Cloud Sync:</strong> Online & Cross-Device
+            </div>
+          </div>
+
+          <!-- Cloud Status Summary -->
+          <div class="cloud-status-card" style="margin-top: 10px;">
+            <div class="cloud-status-header">
+              <span class="cs-label">Cloud Sync Status</span>
+              <span class="cs-time" id="cloudLastSavedTime">Synced just now</span>
+            </div>
+            <div class="cloud-stats-mini">
+              <div class="cs-item">
+                <span class="cs-val" id="csLevelVal">Lv.1</span>
+                <span class="cs-name">Level</span>
+              </div>
+              <div class="cs-item">
+                <span class="cs-val" id="csRatingVal">★ 0.5</span>
+                <span class="cs-name">Rating</span>
+              </div>
+              <div class="cs-item">
+                <span class="cs-val" id="csCoinsVal">🪙 80</span>
+                <span class="cs-name">Coins</span>
+              </div>
+              <div class="cs-item">
+                <span class="cs-val" id="csCashVal">💵 25</span>
+                <span class="cs-name">Cash</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Cloud Action Buttons -->
+          <div class="auth-actions-grid" style="margin-top: 14px;">
+            <button class="btn-cloud-card primary" id="btnManualSaveCloud" type="button">
+              <span class="btn-cc-icon">💾</span>
+              <div class="btn-cc-text">
+                <strong>Save to Cloud</strong>
+                <small>Upload newest restaurant state</small>
+              </div>
+            </button>
+
+            <button class="btn-cloud-card secondary" id="btnManualLoadCloud" type="button">
+              <span class="btn-cc-icon">🔄</span>
+              <div class="btn-cc-text">
+                <strong>Load from Cloud</strong>
+                <small>Restore cloud backup</small>
+              </div>
+            </button>
+
+            <button class="btn-cloud-card secondary" id="btnExportSaveJson" type="button">
+              <span class="btn-cc-icon">📤</span>
+              <div class="btn-cc-text">
+                <strong>Export Save</strong>
+                <small>Download backup .json file</small>
+              </div>
+            </button>
+
+            <button class="btn-cloud-card secondary" id="btnImportSaveJson" type="button">
+              <span class="btn-cc-icon">📥</span>
+              <div class="btn-cc-text">
+                <strong>Import Save</strong>
+                <small>Restore from local .json file</small>
+              </div>
+            </button>
+          </div>
+
+          <div class="auth-logout-row" style="margin-top: 14px;">
+            <button class="btn-auth-logout" id="btnAuthSignOut" type="button">Sign Out of Cloud</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <input type="file" id="fileImportSave" accept=".json" style="display: none;">
+
+  <div id="toastContainer"></div>
+
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>
