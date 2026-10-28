@@ -978,13 +978,19 @@
       transform: translateY(-2px);
     }
     .cat-tab {
+      flex-shrink: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
       background: rgba(255, 255, 255, 0.08);
       border: 1px solid rgba(255, 255, 255, 0.15);
       color: #e0e1dd;
       font-family: inherit;
       font-size: 0.85rem;
       font-weight: 700;
-      padding: 6px 14px;
+      padding: 8px 16px;
+      min-height: 38px;
+      box-sizing: border-box;
       border-radius: 12px;
       cursor: pointer;
       white-space: nowrap;
@@ -2209,9 +2215,9 @@
         <div class="modal-title">📖 Master Chef Cookbook & Daily Menu</div>
         <button class="modal-close-btn" id="btnCloseCookbookModal" title="Close Modal">✕</button>
       </div>
-      <div class="modal-body" style="padding: 14px 20px 24px; gap: 10px;">
+      <div class="modal-body" style="padding: 14px 20px 24px; gap: 12px; overflow-y: auto;">
         <!-- Compact Overview Header -->
-        <div style="background: linear-gradient(135deg, rgba(245, 158, 11, 0.16), rgba(217, 119, 6, 0.08)); border: 1.5px solid rgba(245, 158, 11, 0.35); border-radius: 14px; padding: 10px 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+        <div style="flex-shrink: 0; background: linear-gradient(135deg, rgba(245, 158, 11, 0.16), rgba(217, 119, 6, 0.08)); border: 1.5px solid rgba(245, 158, 11, 0.35); border-radius: 14px; padding: 10px 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
           <div style="display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap;">
             <span style="font-size: 0.78rem; text-transform: uppercase; color: #94a3b8; font-weight: 800; letter-spacing: 0.5px;">Culinary Mastery</span>
             <span style="font-size: 1.3rem; font-weight: 800; color: #ffd166;" id="cookbookActiveCountText">4 Dishes on Menu</span>
@@ -2222,8 +2228,8 @@
           </div>
         </div>
 
-        <!-- Category Tabs -->
-        <div style="display: flex; gap: 8px; border-bottom: 1px solid rgba(255,255,255,0.12); padding-bottom: 8px; overflow-x: auto;">
+        <!-- Category Tabs (Never shrink, always fully visible and clickable) -->
+        <div class="cookbook-tabs-bar" style="flex-shrink: 0; min-height: 52px; display: flex; align-items: center; gap: 10px; border-bottom: 1.5px solid rgba(255,255,255,0.12); padding: 4px 2px 10px; overflow-x: auto; -webkit-overflow-scrolling: touch;">
           <button class="cat-tab active" data-recipe-cat="all">🌟 All Dishes</button>
           <button class="cat-tab" data-recipe-cat="starter">🥣 Starters</button>
           <button class="cat-tab" data-recipe-cat="main">🍔 Mains</button>
@@ -2232,7 +2238,7 @@
         </div>
 
         <!-- Recipe Cards Grid: smooth single-container scroll -->
-        <div id="recipeCardsGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(245px, 1fr)); gap: 12px; margin-top: 4px; padding-bottom: 20px;">
+        <div id="recipeCardsGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(245px, 1fr)); gap: 12px; margin-top: 4px; padding-bottom: 40px;">
           <!-- Dynamically populated -->
         </div>
       </div>

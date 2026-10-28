@@ -1239,7 +1239,7 @@ window.addEventListener('DOMContentLoaded', () => {
             <button class="btn-toggle-menu ${recipe.isActive ? 'active' : ''}" style="flex: 1;" title="${recipe.isActive ? 'Remove from today\'s menu' : 'Put on today\'s menu'}">
               ${recipe.isActive ? '✓ On Menu' : '+ Add to Menu'}
             </button>
-            <button class="btn-upgrade-recipe" style="flex: 1.25;" ${isMax || !canUpgrade ? 'disabled' : ''} title="${isMax ? 'Maximum Level Reached' : !allReqsSatisfied ? 'Need required ingredients! Serve diners and collect tips to find ingredients.' : !canAfford ? 'Not enough coins' : `Upgrade to Level ${recipe.level + 1}`}">
+            <button class="btn-upgrade-recipe" style="flex: 1.25;" ${isMax || !canUpgrade ? 'disabled' : ''} title="${isMax ? 'Maximum Level Reached' : !allReqsSatisfied ? 'Need required ingredients! Serve diners and collect tips to find ingredients.' : !canAfford ? 'Debt limit reached' : `Upgrade to Level ${recipe.level + 1}`}">
               ${isMax ? '👑 Max Level' : !allReqsSatisfied ? `🔒 Need Stock (${cost} 🪙)` : `⬆️ Upgrade Lv.${recipe.level + 1} (${cost} 🪙)`}
             </button>
           </div>
