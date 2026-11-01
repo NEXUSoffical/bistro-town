@@ -90,55 +90,87 @@ export class CityEnvironment {
   }
 
   /**
-   * 1. Draw Pristine Sky, Radiant Sun, Fluffy Clouds, Birds, and Distant Horizon Skyline.
+   * 1. Draw Pristine Sky, Radiant Sun, Fluffy Clouds, Birds, and Precision Isometric Horizon Meadow.
    */
-  drawSkyAndBackground(ctx: CanvasRenderingContext2D, width: number, height: number, originX: number, originY: number) {
-    ctx.save();
+  drawSkyAndBackground(t: CanvasRenderingContext2D, width: number, height: number, originX: number, originY: number) {
+    t.save();
+    const getIsoHorizon = (x: number) => {
+      const dist = x - originX;
+      const peak = Math.max(25, (originY - 110) - 65);
+      return peak + Math.sqrt(dist * dist + 1200) * 0.5;
+    };
+    const skyGrad = t.createLinearGradient(0, 0, 0, Math.max(originY - 40, 120));
+    skyGrad.addColorStop(0, "#0284c7");
+    skyGrad.addColorStop(0.35, "#38bdf8");
+    skyGrad.addColorStop(0.7, "#7dd3fc");
+    skyGrad.addColorStop(0.9, "#bae6fd");
+    skyGrad.addColorStop(1, "#fef08a");
+    t.fillStyle = skyGrad;
+    t.beginPath();
+    t.moveTo(0, 0);
+    t.lineTo(width, 0);
+    t.lineTo(width, getIsoHorizon(width) + 20);
+    for (let x = width; x >= 0; x -= 15) {
+      t.lineTo(x, getIsoHorizon(x));
+    }
+    t.closePath();
+    t.fill();
 
-    // A. Sky Gradient: Bright warm cerulean to sunny horizon glow
-    const skyGrad = ctx.createLinearGradient(0, 0, 0, height * 0.65);
-    skyGrad.addColorStop(0, '#38bdf8');    // Clear azure
-    skyGrad.addColorStop(0.4, '#7dd3fc'); // Gentle daylight blue
-    skyGrad.addColorStop(0.75, '#bae6fd'); // Atmospheric mist
-    skyGrad.addColorStop(1, '#ffedd5');   // Warm golden city sunlight
-    ctx.fillStyle = skyGrad;
-    ctx.fillRect(0, 0, width, height);
-
-    // B. Radiant Golden Sun
     const sunX = width * 0.82;
-    const sunY = Math.max(45, originY - 240);
-    const sunGrad = ctx.createRadialGradient(sunX, sunY, 10, sunX, sunY, 140);
-    sunGrad.addColorStop(0, 'rgba(254, 240, 138, 0.9)');
-    sunGrad.addColorStop(0.3, 'rgba(253, 224, 71, 0.3)');
-    sunGrad.addColorStop(1, 'rgba(253, 224, 71, 0)');
-    ctx.fillStyle = sunGrad;
-    ctx.beginPath();
-    ctx.arc(sunX, sunY, 140, 0, Math.PI * 2);
-    ctx.fill();
+    const sunY = Math.max(40, originY - 240);
+    const sunGrad = t.createRadialGradient(sunX, sunY, 8, sunX, sunY, 140);
+    sunGrad.addColorStop(0, "rgba(254, 240, 138, 0.98)");
+    sunGrad.addColorStop(0.25, "rgba(253, 224, 71, 0.4)");
+    sunGrad.addColorStop(0.6, "rgba(253, 224, 71, 0.12)");
+    sunGrad.addColorStop(1, "rgba(253, 224, 71, 0)");
+    t.fillStyle = sunGrad;
+    t.beginPath();
+    t.arc(sunX, sunY, 140, 0, Math.PI * 2);
+    t.fill();
 
-    // C. Gentle Distant Birds soaring in V-formation
-    ctx.strokeStyle = 'rgba(71, 85, 105, 0.45)';
-    ctx.lineWidth = 1.8;
-    for (let b = 0; b < 4; b++) {
-      const bx = this.birdsX + b * 20;
-      const by = 60 + b * 8 + Math.sin(this.animTimer * 2 + b) * 3;
-      ctx.beginPath();
-      ctx.moveTo(bx - 6, by + 3);
-      ctx.quadraticCurveTo(bx - 2, by - 3, bx, by);
-      ctx.quadraticCurveTo(bx + 2, by - 3, bx + 6, by + 3);
-      ctx.stroke();
+    t.strokeStyle = "rgba(51, 65, 85, 0.5)";
+    t.lineWidth = 1.8;
+    for (let h = 0; h < 4; h++) {
+      const p = this.birdsX + h * 22;
+      const m = 50 + h * 7 + Math.sin(this.animTimer * 2.2 + h) * 3.5;
+      t.beginPath();
+      t.moveTo(p - 6, m + 3);
+      t.quadraticCurveTo(p - 2, m - 3, p, m);
+      t.quadraticCurveTo(p + 2, m - 3, p + 6, m + 3);
+      t.stroke();
+    }
+    for (const h of this.clouds) {
+      this.drawCloud(t, h.x, h.y, h.scale);
     }
 
-    // D. Soft Drifting Clouds
-    for (const c of this.clouds) {
-      this.drawCloud(ctx, c.x, c.y, c.scale);
+    const meadowGrad = t.createLinearGradient(0, Math.max(20, originY - 180), 0, height);
+    meadowGrad.addColorStop(0, "#48bb78");
+    meadowGrad.addColorStop(0.18, "#38a169");
+    meadowGrad.addColorStop(0.58, "#2f855a");
+    meadowGrad.addColorStop(1, "#1e4d35");
+    t.fillStyle = meadowGrad;
+    t.beginPath();
+    t.moveTo(0, height);
+    for (let x = 0; x <= width + 15; x += 15) {
+      t.lineTo(x, getIsoHorizon(x) - 1);
     }
+    t.lineTo(width, height);
+    t.closePath();
+    t.fill();
 
-    // E. Panoramic Distant City Skyline on Horizon (behind the back street)
-    const horizonY = Math.max(originY - 40, 120);
-    this.drawDistantSkyline(ctx, width, horizonY, originX);
+    t.strokeStyle = "rgba(34, 84, 61, 0.55)";
+    t.lineWidth = 2;
+    t.beginPath();
+    for (let x = 0; x <= width + 15; x += 15) {
+      if (x === 0) t.moveTo(x, getIsoHorizon(x));
+      else t.lineTo(x, getIsoHorizon(x));
+    }
+    t.stroke();
+    t.restore();
+  }
 
-    ctx.restore();
+  drawDistantSkyline(_ctx: CanvasRenderingContext2D, _width: number, _horizonY: number, _originX: number) {
+    // Skyline disabled per user request for pure meadow horizon
   }
 
   private drawCloud(ctx: CanvasRenderingContext2D, x: number, y: number, scale: number) {
@@ -167,257 +199,164 @@ export class CityEnvironment {
     ctx.restore();
   }
 
-  private drawDistantSkyline(ctx: CanvasRenderingContext2D, width: number, horizonY: number, _originX: number) {
-    ctx.save();
-
-    // 1. Far Distance Skyline Silhouette (misty lavender haze)
-    ctx.fillStyle = 'rgba(148, 163, 184, 0.35)';
-    let sx = -40;
-    while (sx < width + 60) {
-      const bW = 50 + (Math.sin(sx * 0.07) * 22 + 22);
-      const bH = 75 + (Math.cos(sx * 0.05) * 35 + 35);
-      const bY = horizonY - bH;
-      ctx.fillRect(sx, bY, bW, bH + 20);
-
-      const mod = Math.abs(Math.floor(sx / 85)) % 4;
-      if (mod === 0) {
-        ctx.beginPath();
-        ctx.moveTo(sx + bW / 2, bY - 32);
-        ctx.lineTo(sx + bW * 0.25, bY);
-        ctx.lineTo(sx + bW * 0.75, bY);
-        ctx.closePath();
-        ctx.fill();
-        ctx.fillRect(sx + bW / 2 - 1.5, bY - 40, 3, 10);
-      } else if (mod === 2) {
-        ctx.beginPath();
-        ctx.arc(sx + bW / 2, bY, bW * 0.32, Math.PI, 0);
-        ctx.fill();
-      }
-
-      sx += bW + 8;
-    }
-
-    // 2. Mid Distance European Mansard Roofs (soft slate)
-    ctx.fillStyle = 'rgba(100, 116, 139, 0.45)';
-    sx = -20;
-    while (sx < width + 40) {
-      const bW = 65 + (Math.cos(sx * 0.1) * 20 + 20);
-      const bH = 50 + (Math.sin(sx * 0.08) * 25 + 25);
-      const bY = horizonY - bH;
-      ctx.fillRect(sx, bY, bW, bH + 20);
-
-      ctx.beginPath();
-      ctx.moveTo(sx - 4, bY);
-      ctx.lineTo(sx + 10, bY - 18);
-      ctx.lineTo(sx + bW - 10, bY - 18);
-      ctx.lineTo(sx + bW + 4, bY);
-      ctx.closePath();
-      ctx.fill();
-
-      ctx.fillRect(sx + 12, bY - 26, 6, 10);
-      sx += bW + 12;
-    }
-
-    // 3. Boulevard Tree Canopy
-    ctx.fillStyle = 'rgba(74, 222, 128, 0.55)';
-    for (let tx = -30; tx < width + 50; tx += 48) {
-      const treeR = 22 + (Math.sin(tx * 0.1) * 6 + 6);
-      const treeY = horizonY + 8;
-      ctx.beginPath();
-      ctx.arc(tx, treeY, treeR, 0, Math.PI * 2);
-      ctx.fill();
-    }
-
-    ctx.restore();
-  }
 
   /**
-   * 2. Draw City Street & Sidewalk on the OTHER SIDE (behind the restaurant walls).
-   * Runs outside Northwest wall (col = -1..-3) and Northeast wall (row = -1..-3).
-   * Drawn strictly behind walls at depth -150.
+   * 2. Draw Meadow Surroundings & Stepping Stones (behind restaurant walls).
    */
-  drawBackStreet(ctx: CanvasRenderingContext2D, originX: number, originY: number, gridSize: number) {
-    ctx.save();
-    const halfW = IsoUtils.TILE_WIDTH / 2;
-    const halfH = IsoUtils.TILE_HEIGHT / 2;
+  drawBackStreet(t: CanvasRenderingContext2D, originX: number, originY: number, gridSize: number) {
+    t.save();
+    const wallTop = IsoUtils.gridToScreen(0, 0, originX, originY);
 
-    // A. Sidewalk along the back Northwest wall (col = -1, row = -1..gridSize + 2)
-    // and back Northeast wall (row = -1, col = -1..gridSize + 2)
-    for (let r = -2; r <= gridSize + 2; r++) {
-      for (let c = -3; c <= -1; c++) {
-        const pt = IsoUtils.gridToScreen(c, r, originX, originY);
-        const isSidewalk = c === -1;
-
-        ctx.beginPath();
-        ctx.moveTo(pt.x, pt.y);
-        ctx.lineTo(pt.x + halfW, pt.y + halfH);
-        ctx.lineTo(pt.x, pt.y + IsoUtils.TILE_HEIGHT);
-        ctx.lineTo(pt.x - halfW, pt.y + halfH);
-        ctx.closePath();
-
-        if (isSidewalk) {
-          // Cobblestone limestone pavers
-          ctx.fillStyle = (c + r) % 2 === 0 ? '#cbd5e1' : '#e2e8f0';
-          ctx.fill();
-          ctx.strokeStyle = 'rgba(148, 163, 184, 0.35)';
-          ctx.lineWidth = 1;
-          ctx.stroke();
-        } else {
-          // Cobblestone avenue street
-          ctx.fillStyle = (c + r) % 2 === 0 ? '#64748b' : '#475569';
-          ctx.fill();
-          ctx.strokeStyle = 'rgba(30, 41, 59, 0.4)';
-          ctx.lineWidth = 1;
-          ctx.stroke();
-        }
-      }
-    }
-
-    for (let c = -2; c <= gridSize + 2; c++) {
-      for (let r = -3; r <= -1; r++) {
-        if (c < 0 && r < 0) continue; // already drawn above
-        const pt = IsoUtils.gridToScreen(c, r, originX, originY);
-        const isSidewalk = r === -1;
-
-        ctx.beginPath();
-        ctx.moveTo(pt.x, pt.y);
-        ctx.lineTo(pt.x + halfW, pt.y + halfH);
-        ctx.lineTo(pt.x, pt.y + IsoUtils.TILE_HEIGHT);
-        ctx.lineTo(pt.x - halfW, pt.y + halfH);
-        ctx.closePath();
-
-        if (isSidewalk) {
-          ctx.fillStyle = (c + r) % 2 === 0 ? '#cbd5e1' : '#e2e8f0';
-          ctx.fill();
-          ctx.strokeStyle = 'rgba(148, 163, 184, 0.35)';
-          ctx.lineWidth = 1;
-          ctx.stroke();
-        } else {
-          ctx.fillStyle = (c + r) % 2 === 0 ? '#64748b' : '#475569';
-          ctx.fill();
-          ctx.strokeStyle = 'rgba(30, 41, 59, 0.4)';
-          ctx.lineWidth = 1;
-          ctx.stroke();
-        }
-      }
-    }
-
-    // B. Victorian Streetlamps on the back street sidewalk (visible through windows & above back walls)
-    const lampCoords = [
-      { c: -1, r: 0 },
-      { c: -1, r: Math.floor(gridSize / 2) + 1 },
-      { c: 0, r: -1 },
-      { c: Math.floor(gridSize / 2) + 1, r: -1 }
+    // Stepping stones path
+    const pathPoints = [
+      { x: wallTop.x + 36, y: wallTop.y - 6, rx: 11, ry: 6 },
+      { x: wallTop.x + 44, y: wallTop.y - 18, rx: 12, ry: 6.5 },
+      { x: wallTop.x + 40, y: wallTop.y - 30, rx: 11.5, ry: 6 },
+      { x: wallTop.x + 52, y: wallTop.y - 42, rx: 13, ry: 7 },
+      { x: wallTop.x + 64, y: wallTop.y - 56, rx: 12.5, ry: 6.8 },
+      { x: wallTop.x + 58, y: wallTop.y - 70, rx: 14, ry: 7.5 },
+      { x: wallTop.x + 70, y: wallTop.y - 86, rx: 13, ry: 7 },
+      { x: wallTop.x + 78, y: wallTop.y - 102, rx: 15, ry: 8 },
+      { x: wallTop.x + 88, y: wallTop.y - 120, rx: 16, ry: 8.5 }
     ];
+    pathPoints.forEach(pt => {
+      t.fillStyle = "rgba(12, 38, 22, 0.38)";
+      t.beginPath();
+      t.ellipse(pt.x + 1, pt.y + 2.5, pt.rx + 2, pt.ry + 1.5, 0, 0, Math.PI * 2);
+      t.fill();
+      t.fillStyle = "#94a3b8";
+      t.beginPath();
+      t.ellipse(pt.x, pt.y + 1.5, pt.rx, pt.ry, 0, 0, Math.PI * 2);
+      t.fill();
+      t.fillStyle = "#e2e8f0";
+      t.beginPath();
+      t.ellipse(pt.x, pt.y, pt.rx, pt.ry, 0, 0, Math.PI * 2);
+      t.fill();
+      t.strokeStyle = "#64748b";
+      t.lineWidth = 1.2;
+      t.stroke();
+      t.fillStyle = "rgba(255, 255, 255, 0.65)";
+      t.beginPath();
+      t.ellipse(pt.x - pt.rx * 0.25, pt.y - pt.ry * 0.25, pt.rx * 0.5, pt.ry * 0.4, 0, 0, Math.PI * 2);
+      t.fill();
+    });
 
-    for (const { c, r } of lampCoords) {
-      const pt = IsoUtils.gridToScreen(c, r, originX, originY);
-      this.drawStreetLamp(ctx, pt.x, pt.y + 16);
-    }
-
-    // C. Parisian Trees on the back street
-    const treeCoords = [
-      { c: -2, r: 2 },
-      { c: -2, r: gridSize },
-      { c: 2, r: -2 },
-      { c: gridSize, r: -2 }
+    // Decorative flowers, grass tufts, clovers
+    const decorSeeds = [
+      { dx: -220, dy: -80, t: "tuft" },
+      { dx: -280, dy: 30, t: "daisy" },
+      { dx: -160, dy: 120, t: "buttercup" },
+      { dx: -110, dy: -130, t: "tuft" },
+      { dx: -340, dy: -50, t: "clover" },
+      { dx: -210, dy: 200, t: "pink_clover" },
+      { dx: 160, dy: -150, t: "buttercup" },
+      { dx: 230, dy: -90, t: "tuft" },
+      { dx: 280, dy: 30, t: "clover" },
+      { dx: 200, dy: 110, t: "daisy" },
+      { dx: 320, dy: -130, t: "tuft" },
+      { dx: 110, dy: 200, t: "buttercup" },
+      { dx: -80, dy: 260, t: "tuft" },
+      { dx: 50, dy: 280, t: "daisy" },
+      { dx: 240, dy: 220, t: "clover" },
+      { dx: -280, dy: 240, t: "tuft" }
     ];
-
-    for (const { c, r } of treeCoords) {
-      const pt = IsoUtils.gridToScreen(c, r, originX, originY);
-      this.drawCityTree(ctx, pt.x, pt.y + 18);
-    }
-
-    // D. Pedestrians strolling on the back street sidewalk
-    for (const p of this.pedestrians) {
-      let pt: { x: number; y: number };
-      if (p.street === 'nw') {
-        const curR = -0.5 + (gridSize + 1.5) * p.progress;
-        pt = IsoUtils.gridToScreen(-1.2, curR, originX, originY);
+    decorSeeds.forEach(item => {
+      const gx = originX + item.dx;
+      const gy = originY + item.dy;
+      if (item.t === "tuft") {
+        const sway = Math.sin(this.animTimer * 2.4 + (item.dx + item.dy) * 0.02) * 1.8;
+        t.strokeStyle = "#1b4332";
+        t.lineWidth = 1.5;
+        t.beginPath();
+        t.moveTo(gx - 5, gy);
+        t.quadraticCurveTo(gx - 7 + sway, gy - 7, gx - 9 + sway * 1.3, gy - 9);
+        t.moveTo(gx - 1, gy);
+        t.quadraticCurveTo(gx - 1 + sway, gy - 9, gx + sway * 1.2, gy - 12);
+        t.moveTo(gx + 3, gy);
+        t.quadraticCurveTo(gx + 5 + sway, gy - 8, gx + 7 + sway * 1.2, gy - 9);
+        t.stroke();
+        t.strokeStyle = "#4ade80";
+        t.lineWidth = 1;
+        t.beginPath();
+        t.moveTo(gx - 1, gy - 4);
+        t.quadraticCurveTo(gx - 1 + sway, gy - 9, gx + sway * 1.2, gy - 12);
+        t.stroke();
+      } else if (item.t === "clover") {
+        t.fillStyle = "#1b4332";
+        t.beginPath();
+        t.arc(gx, gy, 4.5, 0, Math.PI * 2);
+        t.fill();
+        t.fillStyle = "#2d6a4f";
+        t.beginPath();
+        t.arc(gx - 2.5, gy - 2.5, 2.4, 0, Math.PI * 2);
+        t.arc(gx + 2.5, gy - 2.5, 2.4, 0, Math.PI * 2);
+        t.arc(gx, gy + 1.5, 2.4, 0, Math.PI * 2);
+        t.fill();
+      } else if (item.t === "pink_clover") {
+        t.fillStyle = "#1b4332";
+        t.beginPath();
+        t.arc(gx, gy, 4.5, 0, Math.PI * 2);
+        t.fill();
+        t.fillStyle = "#2d6a4f";
+        t.beginPath();
+        t.arc(gx - 2, gy - 2, 2, 0, Math.PI * 2);
+        t.arc(gx + 2, gy - 2, 2, 0, Math.PI * 2);
+        t.arc(gx, gy + 1.5, 2, 0, Math.PI * 2);
+        t.fill();
+        t.fillStyle = "#f472b6";
+        t.beginPath();
+        t.arc(gx, gy - 4, 2.5, 0, Math.PI * 2);
+        t.arc(gx - 1.5, gy - 5.5, 1.8, 0, Math.PI * 2);
+        t.arc(gx + 1.5, gy - 5.5, 1.8, 0, Math.PI * 2);
+        t.fill();
+      } else if (item.t === "buttercup") {
+        t.fillStyle = "#15803d";
+        t.beginPath();
+        t.arc(gx, gy, 3.5, 0, Math.PI * 2);
+        t.fill();
+        t.fillStyle = "#facc15";
+        t.beginPath();
+        t.arc(gx, gy - 3, 2.8, 0, Math.PI * 2);
+        t.fill();
+        t.fillStyle = "#ca8a04";
+        t.beginPath();
+        t.arc(gx, gy - 3, 1.1, 0, Math.PI * 2);
+        t.fill();
       } else {
-        const curC = -0.5 + (gridSize + 1.5) * p.progress;
-        pt = IsoUtils.gridToScreen(curC, -1.2, originX, originY);
+        t.fillStyle = "#15803d";
+        t.beginPath();
+        t.arc(gx, gy, 3.5, 0, Math.PI * 2);
+        t.fill();
+        t.fillStyle = "#ffffff";
+        for (let p = 0; p < 5; p++) {
+          const ang = p * (Math.PI * 2 / 5);
+          t.beginPath();
+          t.arc(gx + Math.cos(ang) * 2.6, gy - 3 + Math.sin(ang) * 2.6, 1.4, 0, Math.PI * 2);
+          t.fill();
+        }
+        t.fillStyle = "#facc15";
+        t.beginPath();
+        t.arc(gx, gy - 3, 1.4, 0, Math.PI * 2);
+        t.fill();
       }
-      this.drawPedestrian(ctx, pt.x, pt.y, p);
-    }
+    });
 
-    ctx.restore();
+    for (const r of this.pedestrians) {
+      let pt: { x: number; y: number };
+      if (r.street === "nw") {
+        const h = -1.5 + (gridSize + 1.5) * r.progress;
+        pt = IsoUtils.gridToScreen(-1.5, h, originX, originY);
+      } else {
+        const h = -1.5 + (gridSize + 1.5) * r.progress;
+        pt = IsoUtils.gridToScreen(h, -1.5, originX, originY);
+      }
+      this.drawPedestrian(t, pt.x, pt.y, r);
+    }
+    t.restore();
   }
 
-  private drawStreetLamp(ctx: CanvasRenderingContext2D, x: number, y: number) {
-    // 1. Warm Golden Light Glow Pool
-    const lightGrad = ctx.createRadialGradient(x, y, 6, x, y, 48);
-    lightGrad.addColorStop(0, 'rgba(254, 240, 138, 0.4)');
-    lightGrad.addColorStop(0.5, 'rgba(253, 224, 71, 0.15)');
-    lightGrad.addColorStop(1, 'rgba(253, 224, 71, 0)');
-    ctx.fillStyle = lightGrad;
-    ctx.beginPath();
-    ctx.ellipse(x, y, 48, 24, 0, 0, Math.PI * 2);
-    ctx.fill();
-
-    // 2. Cast Iron Base
-    ctx.fillStyle = '#0f172a';
-    ctx.beginPath();
-    ctx.ellipse(x, y, 7, 3.5, 0, 0, Math.PI * 2);
-    ctx.fill();
-
-    // 3. Slender Pole
-    ctx.fillStyle = '#1e293b';
-    ctx.fillRect(x - 2, y - 64, 4, 64);
-
-    // Brass collars
-    ctx.fillStyle = '#eab308';
-    ctx.fillRect(x - 3, y - 20, 6, 2.5);
-    ctx.fillRect(x - 3, y - 46, 6, 2.5);
-
-    // 4. Curved Lantern Arms
-    ctx.strokeStyle = '#0f172a';
-    ctx.lineWidth = 2.5;
-    ctx.beginPath();
-    ctx.moveTo(x - 6, y - 62);
-    ctx.quadraticCurveTo(x, y - 72, x + 6, y - 62);
-    ctx.stroke();
-
-    // 5. Glass Lantern & Filament
-    ctx.fillStyle = '#fef08a';
-    ctx.beginPath();
-    ctx.moveTo(x - 5, y - 78);
-    ctx.lineTo(x + 5, y - 78);
-    ctx.lineTo(x + 3.5, y - 64);
-    ctx.lineTo(x - 3.5, y - 64);
-    ctx.closePath();
-    ctx.fill();
-
-    // Cap
-    ctx.fillStyle = '#0f172a';
-    ctx.beginPath();
-    ctx.moveTo(x, y - 84);
-    ctx.lineTo(x + 7, y - 78);
-    ctx.lineTo(x - 7, y - 78);
-    ctx.closePath();
-    ctx.fill();
-    ctx.fillRect(x - 1, y - 88, 2, 4);
-  }
-
-  private drawCityTree(ctx: CanvasRenderingContext2D, x: number, y: number) {
-    // Tree Trunk
-    ctx.fillStyle = '#5c3a21';
-    ctx.fillRect(x - 3, y - 32, 6, 32);
-
-    // Foliage Layers
-    const foliageLayers = [
-      { r: 22, dy: 40, color: '#15803d' },
-      { r: 20, dy: 50, color: '#16a34a' },
-      { r: 16, dy: 60, color: '#22c55e' },
-      { r: 10, dy: 68, color: '#86efac' }
-    ];
-
-    for (const f of foliageLayers) {
-      ctx.fillStyle = f.color;
-      ctx.beginPath();
-      ctx.arc(x, y - f.dy, f.r, 0, Math.PI * 2);
-      ctx.fill();
-    }
+  drawCityTree(_ctx: CanvasRenderingContext2D, _x: number, _y: number) {
+    // Trees removed per user request
   }
 
   private drawPedestrian(ctx: CanvasRenderingContext2D, x: number, y: number, p: Pedestrian) {

@@ -447,7 +447,6 @@ export class BistroEngine {
 
   // Game state (Authentic Restaurant City Grind)
   coins = 80;
-  creditLimit = -1000; // Allow balance to go negative into debt (overdraft line of credit)
   cash = 25; // Bistro Cash (Real-money premium currency)
   rating = 0.5; // Star rating (starts at 0.5 half-a-star, max 5.0 stars)
   hasReachedFiveStars = false;
@@ -617,8 +616,8 @@ export class BistroEngine {
       return { success: false, message: `Requires Bistro Level ${reqLevel} to unlock this dish!` };
     }
     const cost = this.getRecipeUpgradeCost(recipe);
-    if ((this.coins - cost) < this.creditLimit) {
-      return { success: false, message: `Requires ${cost} 🪙! (Exceeds debt limit of ${this.creditLimit} 🪙)` };
+    if (this.coins < cost) {
+      return { success: false, message: `Requires ${cost} 🪙! (Need ${cost - this.coins} more 🪙)` };
     }
 
     const reqs = this.getRequiredIngredients(recipe);
@@ -758,8 +757,8 @@ export class BistroEngine {
     const deal = this.marketDeals.find(d => d.id === dealId);
     if (!deal) return { success: false, message: 'Deal expired or not found.' };
     if (deal.isSoldOut) return { success: false, message: 'This deal is already sold out!' };
-    if ((this.coins - deal.coinPrice) < this.creditLimit) {
-      return { success: false, message: `Need ${deal.coinPrice} 🪙! (Exceeds debt limit of ${this.creditLimit} 🪙)` };
+    if (this.coins < deal.coinPrice) {
+      return { success: false, message: `Need ${deal.coinPrice} 🪙! (Need ${deal.coinPrice - this.coins} more 🪙)` };
     }
 
     this.coins -= deal.coinPrice;
@@ -1598,6 +1597,8 @@ export class BistroEngine {
 
   isCellWalkable(col: number, row: number): boolean {
     if (col < 0 || row < 0 || col >= this.gridSize || row >= this.gridSize) return false;
+    // Must have a floor tile placed down
+    if (!this.placedItems.has(`floor_${col}_${row}`)) return false;
     for (const [key, placed] of this.placedItems) {
       if (key.startsWith('wall_') || key.startsWith('window_') || key.startsWith('door_')) {
         continue;
@@ -1822,10 +1823,15 @@ export class BistroEngine {
   }
 
   private spawnCustomer() {
-    const isCoupleRoll = Math.random() < 0.40; // 40% chance of a couple/pair!
+    const hasAnyFloor = Array.from(this.placedItems.values()).some(p => p.item.type === 'floor');
+    if (!hasAnyFloor) return;
+
     const door = this.getRandomEntranceDoor();
     const entranceCol = door.col;
     const entranceRow = door.row;
+    if (!this.placedItems.has(`floor_${entranceCol}_${entranceRow}`)) return;
+
+    const isCoupleRoll = Math.random() < 0.40; // 40% chance of a couple/pair!
     const entrancePt = IsoUtils.gridToScreen(entranceCol, entranceRow, this.originX, this.originY);
 
     if (isCoupleRoll) {
@@ -1909,22 +1915,33 @@ export class BistroEngine {
       const staffList = this.getStaffList();
       const totalWages = this.getTotalShiftWages();
       if (staffList.length > 0) {
-        // Full wage deduction allows coins to go negative into debt (e.g. 0 - 14 = -14)
-        this.coins -= totalWages;
-        staffList.forEach(s => {
-          if (s.role === 'chef') this.recordExpense('chefWages', s.wage || 8);
-          else if (s.role === 'waiter') this.recordExpense('waiterWages', s.wage || 5);
-          else if (s.role === 'cleaner') this.recordExpense('cleanerWages', s.wage || 4);
-        });
-        this.saveGameState();
-
-        const isDeficit = this.coins < 0;
-        const msg = isDeficit
-          ? `-${totalWages} 🪙 (Staff Wages - Debt: ${this.coins} 🪙)`
-          : `-${totalWages} 🪙 (Staff Wages)`;
-        this.spawnFloatingText(msg, this.canvas.width / 2, 90, '#f87171');
-        if (this.onPayrollPaid) {
-          this.onPayrollPaid(totalWages, staffList.length, isDeficit);
+        if (this.coins >= totalWages) {
+          this.coins -= totalWages;
+          staffList.forEach(s => {
+            if (s.role === 'chef') this.recordExpense('chefWages', s.wage || 8);
+            else if (s.role === 'waiter') this.recordExpense('waiterWages', s.wage || 5);
+            else if (s.role === 'cleaner') this.recordExpense('cleanerWages', s.wage || 4);
+          });
+          this.saveGameState();
+          this.spawnFloatingText(`-${totalWages} 🪙 (Staff Wages)`, this.canvas.width / 2, 90, '#f87171');
+          if (this.onPayrollPaid) {
+            this.onPayrollPaid(totalWages, staffList.length, false);
+          }
+        } else {
+          // Deficit: unpaid wages!
+          const unpaid = Math.max(0, totalWages - Math.max(0, this.coins));
+          this.recordExpense('wageDeficits', unpaid);
+          staffList.forEach(s => {
+            if (s.role === 'chef') this.recordExpense('chefWages', s.wage || 8);
+            else if (s.role === 'waiter') this.recordExpense('waiterWages', s.wage || 5);
+            else if (s.role === 'cleaner') this.recordExpense('cleanerWages', s.wage || 4);
+          });
+          this.coins = 0;
+          this.adjustRating(-0.50, '-0.50 ⭐ Wage Deficit!', this.canvas.width / 2, 90);
+          this.saveGameState();
+          if (this.onPayrollPaid) {
+            this.onPayrollPaid(totalWages, staffList.length, true);
+          }
         }
       }
     }
@@ -2429,8 +2446,8 @@ export class BistroEngine {
     if (this.level < nextTier.minLevel) {
       return { can: false, reason: `Requires Level ${nextTier.minLevel}! (Currently Lv. ${this.level})`, nextTier };
     }
-    if ((this.coins - nextTier.cost) < this.creditLimit) {
-      return { can: false, reason: `Requires ${nextTier.cost} 🪙! (Exceeds debt limit of ${this.creditLimit} 🪙)`, nextTier };
+    if (this.coins < nextTier.cost) {
+      return { can: false, reason: `Requires ${nextTier.cost} 🪙! (Need ${nextTier.cost - this.coins} more)`, nextTier };
     }
     return { can: true, nextTier };
   }
@@ -2523,10 +2540,17 @@ export class BistroEngine {
       for (let c = 0; c < this.gridSize; c++) {
         const floor = this.placedItems.get(`floor_${c}_${r}`);
         const isHovered = this.hoveredCell?.col === c && this.hoveredCell?.row === r;
-        renderQueue.push({
-          depth: (c + r) * 10,
-          draw: () => this.drawFloorTile(c, r, floor?.item.color || '#deb887', isHovered, floor?.item.pattern)
-        });
+        if (floor) {
+          renderQueue.push({
+            depth: (c + r) * 10,
+            draw: () => this.drawFloorTile(c, r, floor.item.color || '#deb887', isHovered)
+          });
+        } else {
+          renderQueue.push({
+            depth: (c + r) * 10,
+            draw: () => this.drawUnpavedGrassCell(c, r, isHovered)
+          });
+        }
       }
     }
 
@@ -2749,65 +2773,6 @@ export class BistroEngine {
       this.ctx.moveTo(x1 - 10, y1 - wallHeight * 0.5 - 10 * slope);
       this.ctx.lineTo(x2 + 10, y2 - wallHeight * 0.5 + 10 * slope);
       this.ctx.stroke();
-    } else if (pattern === 'shoji') {
-      // Japanese Shoji Paper & Black Lacquer
-      this.ctx.fillStyle = '#fffbeb';
-      this.ctx.fillRect(minX - 10, minY - 10, IsoUtils.TILE_WIDTH + 20, wallHeight + IsoUtils.TILE_HEIGHT + 20);
-      this.ctx.strokeStyle = '#292524';
-      this.ctx.lineWidth = 1.6;
-      for (let bx = minX - 10; bx < minX + IsoUtils.TILE_WIDTH + 10; bx += 10) {
-        this.ctx.beginPath();
-        this.ctx.moveTo(bx, minY - 10);
-        this.ctx.lineTo(bx, Math.max(y1, y2) + 10);
-        this.ctx.stroke();
-      }
-      for (let by = minY - 10; by < Math.max(y1, y2) + 10; by += 12) {
-        this.ctx.beginPath();
-        this.ctx.moveTo(minX - 10, by);
-        this.ctx.lineTo(minX + IsoUtils.TILE_WIDTH + 10, by);
-        this.ctx.stroke();
-      }
-    } else if (pattern === 'retro_diner') {
-      // 1950s Turquoise Diner Diamond Starburst
-      this.ctx.fillStyle = '#06b6d4';
-      this.ctx.fillRect(minX - 10, minY - 10, IsoUtils.TILE_WIDTH + 20, wallHeight + IsoUtils.TILE_HEIGHT + 20);
-      this.ctx.fillStyle = '#f8fafc';
-      const midX = (x1 + x2) / 2;
-      const midY = (y1 + y2) / 2 - wallHeight * 0.6;
-      this.ctx.beginPath();
-      this.ctx.moveTo(midX, midY - 8);
-      this.ctx.lineTo(midX + 6, midY);
-      this.ctx.lineTo(midX, midY + 8);
-      this.ctx.lineTo(midX - 6, midY);
-      this.ctx.closePath();
-      this.ctx.fill();
-    } else if (pattern === 'tuscan') {
-      // Warm Rustic Terracotta Stucco
-      this.ctx.fillStyle = '#ea580c';
-      this.ctx.fillRect(minX - 10, minY - 10, IsoUtils.TILE_WIDTH + 20, wallHeight + IsoUtils.TILE_HEIGHT + 20);
-    } else if (pattern === 'cyber') {
-      // Cyber Neon Circuit Traces
-      this.ctx.fillStyle = '#090d16';
-      this.ctx.fillRect(minX - 10, minY - 10, IsoUtils.TILE_WIDTH + 20, wallHeight + IsoUtils.TILE_HEIGHT + 20);
-      this.ctx.strokeStyle = '#06b6d4';
-      this.ctx.lineWidth = 1.5;
-      this.ctx.beginPath();
-      this.ctx.moveTo(x1 - 5, y1 - wallHeight * 0.4);
-      this.ctx.lineTo((x1 + x2) / 2, y1 - wallHeight * 0.4);
-      this.ctx.lineTo(x2 + 5, y2 - wallHeight * 0.7);
-      this.ctx.stroke();
-    } else if (pattern === 'bamboo') {
-      // Tropical Bamboo Reed Wall
-      this.ctx.fillStyle = '#d97706';
-      this.ctx.fillRect(minX - 10, minY - 10, IsoUtils.TILE_WIDTH + 20, wallHeight + IsoUtils.TILE_HEIGHT + 20);
-      this.ctx.strokeStyle = '#78350f';
-      this.ctx.lineWidth = 2;
-      for (let bx = minX - 10; bx < minX + IsoUtils.TILE_WIDTH + 10; bx += 8) {
-        this.ctx.beginPath();
-        this.ctx.moveTo(bx, minY - 10);
-        this.ctx.lineTo(bx, Math.max(y1, y2) + 10);
-        this.ctx.stroke();
-      }
     } else {
       // Classic Sage Wainscot (Default)
       const grad = this.ctx.createLinearGradient(x2, y2 - wallHeight, x1, y1);
@@ -2928,6 +2893,8 @@ export class BistroEngine {
       this.activeBuildTool === 'remove'
     );
 
+    let hasAnyWallAtCorner = false;
+
     // 1. Northwest Wall Sections (col = 0, row = r)
     for (let r = 0; r < this.gridSize; r++) {
       const x1 = cornerPt.x - r * halfW;
@@ -2941,6 +2908,24 @@ export class BistroEngine {
       const placed = this.placedItems.get(wallKey);
       const winPlaced = this.placedItems.get(winKey);
       const doorPlaced = this.placedItems.get(doorKey);
+      const isRemoved = placed && (placed.item.pattern === 'none' || (placed.item as any).removed);
+
+      if (isRemoved) {
+        if (isWallTool && this.hoveredWall?.side === 'nw' && this.hoveredWall?.index === r) {
+          this.ctx.strokeStyle = 'rgba(56, 189, 248, 0.6)';
+          this.ctx.lineWidth = 2;
+          this.ctx.setLineDash([4, 3]);
+          this.ctx.beginPath();
+          this.ctx.moveTo(x1, y1);
+          this.ctx.lineTo(x2, y2);
+          this.ctx.stroke();
+          this.ctx.setLineDash([]);
+        }
+        continue;
+      }
+
+      if (r === 0) hasAnyWallAtCorner = true;
+
       const pattern = placed?.item.pattern || 'sage';
       const isHovered = isWallTool && this.hoveredWall?.side === 'nw' && this.hoveredWall?.index === r;
 
@@ -2978,6 +2963,24 @@ export class BistroEngine {
       const placed = this.placedItems.get(wallKey);
       const winPlaced = this.placedItems.get(winKey);
       const doorPlaced = this.placedItems.get(doorKey);
+      const isRemoved = placed && (placed.item.pattern === 'none' || (placed.item as any).removed);
+
+      if (isRemoved) {
+        if (isWallTool && this.hoveredWall?.side === 'ne' && this.hoveredWall?.index === c) {
+          this.ctx.strokeStyle = 'rgba(56, 189, 248, 0.6)';
+          this.ctx.lineWidth = 2;
+          this.ctx.setLineDash([4, 3]);
+          this.ctx.beginPath();
+          this.ctx.moveTo(x1, y1);
+          this.ctx.lineTo(x2, y2);
+          this.ctx.stroke();
+          this.ctx.setLineDash([]);
+        }
+        continue;
+      }
+
+      if (c === 0) hasAnyWallAtCorner = true;
+
       const pattern = placed?.item.pattern || 'sage';
       const isHovered = isWallTool && this.hoveredWall?.side === 'ne' && this.hoveredWall?.index === c;
 
@@ -3002,13 +3005,15 @@ export class BistroEngine {
       }
     }
 
-    // 3. Center Corner Pillar Beam (at corner (0, 0))
-    this.ctx.strokeStyle = '#1f2937';
-    this.ctx.lineWidth = 3.5;
-    this.ctx.beginPath();
-    this.ctx.moveTo(cornerPt.x, cornerPt.y);
-    this.ctx.lineTo(cornerPt.x, cornerPt.y - wallHeight);
-    this.ctx.stroke();
+    // 3. Center Corner Pillar Beam (at corner (0, 0)) - only if walls meet at corner
+    if (hasAnyWallAtCorner) {
+      this.ctx.strokeStyle = '#1f2937';
+      this.ctx.lineWidth = 3.5;
+      this.ctx.beginPath();
+      this.ctx.moveTo(cornerPt.x, cornerPt.y);
+      this.ctx.lineTo(cornerPt.x, cornerPt.y - wallHeight);
+      this.ctx.stroke();
+    }
 
     this.ctx.restore();
   }
@@ -3196,60 +3201,6 @@ export class BistroEngine {
       // Terracotta sill
       this.ctx.fillStyle = '#9a3412';
       this.ctx.fillRect(-halfW - 2, winH / 2 - 2, winW + 4, 4);
-    } else if (style === 'shoji') {
-      // Traditional Japanese Shoji Lattice Window
-      const winW = 38;
-      const winH = 48;
-      const halfW = winW / 2;
-      this.ctx.fillStyle = '#292524';
-      this.ctx.fillRect(-halfW - 2, -winH / 2 - 2, winW + 4, winH + 4);
-      this.ctx.fillStyle = '#fffbeb';
-      this.ctx.fillRect(-halfW, -winH / 2, winW, winH);
-      this.ctx.strokeStyle = '#44403c';
-      this.ctx.lineWidth = 1.2;
-      for (let gx = -halfW + 8; gx < halfW; gx += 8) {
-        this.ctx.beginPath();
-        this.ctx.moveTo(gx, -winH / 2);
-        this.ctx.lineTo(gx, winH / 2);
-        this.ctx.stroke();
-      }
-      for (let gy = -winH / 2 + 10; gy < winH / 2; gy += 10) {
-        this.ctx.beginPath();
-        this.ctx.moveTo(-halfW, gy);
-        this.ctx.lineTo(halfW, gy);
-        this.ctx.stroke();
-      }
-    } else if (style === 'diner') {
-      // 1950s Chrome Curved Diner Window
-      const winW = 42;
-      const winH = 46;
-      const halfW = winW / 2;
-      this.ctx.fillStyle = '#e2e8f0';
-      this.ctx.strokeStyle = '#94a3b8';
-      this.ctx.lineWidth = 2.5;
-      this.ctx.beginPath();
-      this.ctx.roundRect(-halfW, -winH / 2, winW, winH, [16, 16, 16, 16]);
-      this.ctx.fill();
-      this.ctx.stroke();
-      this.ctx.fillStyle = '#38bdf8';
-      this.ctx.beginPath();
-      this.ctx.roundRect(-halfW + 3, -winH / 2 + 3, winW - 6, winH - 6, [14, 14, 14, 14]);
-      this.ctx.fill();
-    } else if (style === 'cyber') {
-      // Cyber Panoramic Holographic Window
-      const winW = 46;
-      const winH = 50;
-      const halfW = winW / 2;
-      this.ctx.fillStyle = '#090d16';
-      this.ctx.strokeStyle = '#06b6d4';
-      this.ctx.lineWidth = 2;
-      this.ctx.strokeRect(-halfW, -winH / 2, winW, winH);
-      this.ctx.fillStyle = '#082f49';
-      this.ctx.fillRect(-halfW + 2, -winH / 2 + 2, winW - 4, winH - 4);
-      this.ctx.fillStyle = '#ec4899';
-      this.ctx.fillRect(-halfW + 6, winH / 6, 8, winH / 3);
-      this.ctx.fillRect(-halfW + 18, 0, 10, winH / 2);
-      this.ctx.fillRect(-halfW + 32, winH / 8, 8, winH / 2.5);
     } else {
       // Classic Arched Bistro Window (Default)
       const winW = 38;
@@ -3591,55 +3542,6 @@ export class BistroEngine {
       this.ctx.closePath();
       this.ctx.fill();
 
-    } else if (style === 'shoji') {
-      // Traditional Japanese Sliding Shoji Screen Door
-      this.ctx.fillStyle = '#292524';
-      this.ctx.fillRect(-halfW - 2, -doorH - 2, doorW + 4, doorH + 2);
-      this.ctx.fillStyle = '#fffbeb';
-      this.ctx.fillRect(-halfW, -doorH, doorW, doorH);
-      this.ctx.strokeStyle = '#44403c';
-      this.ctx.lineWidth = 1.4;
-      for (let gx = -halfW + 6; gx < halfW; gx += 6) {
-        this.ctx.beginPath();
-        this.ctx.moveTo(gx, -doorH);
-        this.ctx.lineTo(gx, 0);
-        this.ctx.stroke();
-      }
-      for (let gy = -doorH + 8; gy < 0; gy += 8) {
-        this.ctx.beginPath();
-        this.ctx.moveTo(-halfW, gy);
-        this.ctx.lineTo(halfW, gy);
-        this.ctx.stroke();
-      }
-    } else if (style === 'diner') {
-      // 1950s Chrome Double-Swing Diner Door
-      this.ctx.fillStyle = '#e2e8f0';
-      this.ctx.fillRect(-halfW - 2, -doorH - 2, doorW + 4, doorH + 2);
-      this.ctx.fillStyle = '#dc2626';
-      this.ctx.fillRect(-halfW, -doorH, doorW, doorH);
-      // Circular Porthole Window
-      this.ctx.fillStyle = '#bae6fd';
-      this.ctx.strokeStyle = '#f8fafc';
-      this.ctx.lineWidth = 2;
-      this.ctx.beginPath();
-      this.ctx.arc(0, -doorH + 26, 9, 0, Math.PI * 2);
-      this.ctx.fill();
-      this.ctx.stroke();
-      // Chrome kickplate
-      this.ctx.fillStyle = '#cbd5e1';
-      this.ctx.fillRect(-halfW, -14, doorW, 14);
-    } else if (style === 'cyber') {
-      // Futuristic Sci-Fi Air-Lock Door
-      this.ctx.fillStyle = '#0f172a';
-      this.ctx.fillRect(-halfW - 2, -doorH - 2, doorW + 4, doorH + 2);
-      this.ctx.fillStyle = '#1e293b';
-      this.ctx.fillRect(-halfW, -doorH, doorW, doorH);
-      // Hazard yellow chevrons
-      this.ctx.fillStyle = '#eab308';
-      this.ctx.fillRect(-halfW, -doorH, doorW, 6);
-      // Glowing cyan status slit
-      this.ctx.fillStyle = '#06b6d4';
-      this.ctx.fillRect(-2, -doorH + 12, 4, doorH - 24);
     } else {
       // 5. Classic French Door (default: Elegant Full Double French Doors with 12 Glass Panes!)
       // White/Cream outer molded frame
@@ -3741,7 +3643,36 @@ export class BistroEngine {
     this.ctx.restore();
   }
 
-  private drawFloorTile(col: number, row: number, color: string, isHovered: boolean, pattern?: string) {
+  private drawUnpavedGrassCell(col: number, row: number, isHovered: boolean) {
+    if (!this.isBuildMode || !isHovered) return;
+    const isFloorTool = this.selectedTool && this.selectedTool.type === 'floor';
+    if (!isFloorTool) return;
+    const pt = IsoUtils.gridToScreen(col, row, this.originX, this.originY);
+    const halfW = IsoUtils.TILE_WIDTH / 2;
+    const halfH = IsoUtils.TILE_HEIGHT / 2;
+    const cx = pt.x;
+    const cy = pt.y + halfH;
+    this.ctx.save();
+    this.ctx.beginPath();
+    this.ctx.moveTo(pt.x, pt.y);
+    this.ctx.lineTo(pt.x + halfW, pt.y + halfH);
+    this.ctx.lineTo(pt.x, pt.y + IsoUtils.TILE_HEIGHT);
+    this.ctx.lineTo(pt.x - halfW, pt.y + halfH);
+    this.ctx.closePath();
+    this.ctx.fillStyle = 'rgba(56, 189, 248, 0.35)';
+    this.ctx.fill();
+    this.ctx.strokeStyle = '#38bdf8';
+    this.ctx.lineWidth = 2;
+    this.ctx.stroke();
+    this.ctx.fillStyle = '#ffffff';
+    this.ctx.font = 'bold 9px Inter, sans-serif';
+    this.ctx.textAlign = 'center';
+    this.ctx.textBaseline = 'middle';
+    this.ctx.fillText('+ Build Floor', cx, cy);
+    this.ctx.restore();
+  }
+
+  private drawFloorTile(col: number, row: number, color: string, isHovered: boolean) {
     const pt = IsoUtils.gridToScreen(col, row, this.originX, this.originY);
     const halfW = IsoUtils.TILE_WIDTH / 2;
     const halfH = IsoUtils.TILE_HEIGHT / 2;
@@ -3753,76 +3684,8 @@ export class BistroEngine {
     this.ctx.lineTo(pt.x - halfW, pt.y + halfH);
     this.ctx.closePath();
 
-    if (isHovered) {
-      this.ctx.fillStyle = '#38bdf8';
-      this.ctx.fill();
-    } else if (pattern === 'checker_bw') {
-      // 1950s Diner Black and White Checkerboard
-      this.ctx.fillStyle = (col + row) % 2 === 0 ? '#0f172a' : '#f8fafc';
-      this.ctx.fill();
-    } else if (pattern === 'tatami') {
-      // Japanese Tatami Mat with woven texture and border
-      this.ctx.fillStyle = (col + row) % 2 === 0 ? '#e2d9b6' : '#d4c798';
-      this.ctx.fill();
-      this.ctx.save();
-      this.ctx.strokeStyle = '#2d6a4f';
-      this.ctx.lineWidth = 2.5;
-      this.ctx.beginPath();
-      this.ctx.moveTo(pt.x - halfW + 4, pt.y + halfH - 2);
-      this.ctx.lineTo(pt.x, pt.y + 2);
-      this.ctx.moveTo(pt.x, pt.y + IsoUtils.TILE_HEIGHT - 2);
-      this.ctx.lineTo(pt.x + halfW - 4, pt.y + halfH + 2);
-      this.ctx.stroke();
-      this.ctx.restore();
-    } else if (pattern === 'herringbone') {
-      // Parisian Oak Herringbone Parquet
-      this.ctx.fillStyle = (col + row) % 2 === 0 ? '#b45309' : '#92400e';
-      this.ctx.fill();
-      this.ctx.save();
-      this.ctx.strokeStyle = 'rgba(0, 0, 0, 0.2)';
-      this.ctx.lineWidth = 1;
-      this.ctx.beginPath();
-      this.ctx.moveTo(pt.x - halfW / 2, pt.y + halfH / 2);
-      this.ctx.lineTo(pt.x + halfW / 2, pt.y + halfH + halfH / 2);
-      this.ctx.stroke();
-      this.ctx.restore();
-    } else if (pattern === 'terracotta') {
-      // Tuscan Terracotta Clay Tiles
-      this.ctx.fillStyle = (col + row) % 2 === 0 ? '#c2410c' : '#9a3412';
-      this.ctx.fill();
-    } else if (pattern === 'cyber_grid') {
-      // Cyberpunk Neon Grid
-      this.ctx.fillStyle = '#090d16';
-      this.ctx.fill();
-      this.ctx.strokeStyle = '#06b6d4';
-      this.ctx.lineWidth = 1.5;
-      this.ctx.stroke();
-    } else if (pattern === 'royal_marble') {
-      // Imperial 24K Gold & Marble
-      this.ctx.fillStyle = (col + row) % 2 === 0 ? '#fdf4dc' : '#f8fafc';
-      this.ctx.fill();
-      this.ctx.strokeStyle = '#d4af37';
-      this.ctx.lineWidth = 1.2;
-      this.ctx.stroke();
-    } else if (pattern === 'red_carpet') {
-      // Regal Crimson Velvet Carpet
-      this.ctx.fillStyle = '#7f1d1d';
-      this.ctx.fill();
-      this.ctx.strokeStyle = '#fbbf24';
-      this.ctx.lineWidth = 1.5;
-      this.ctx.stroke();
-    } else if (pattern === 'beach_plank') {
-      // Sun-bleached Driftwood
-      this.ctx.fillStyle = (col + row) % 2 === 0 ? '#e7cba9' : '#d2b48c';
-      this.ctx.fill();
-    } else if (pattern === 'pebble') {
-      // Japanese River Garden Stones
-      this.ctx.fillStyle = '#334155';
-      this.ctx.fill();
-    } else {
-      this.ctx.fillStyle = color;
-      this.ctx.fill();
-    }
+    this.ctx.fillStyle = isHovered ? '#38bdf8' : color;
+    this.ctx.fill();
 
     this.ctx.strokeStyle = isHovered ? '#0284c7' : 'rgba(0, 0, 0, 0.1)';
     this.ctx.lineWidth = 1;
@@ -3969,177 +3832,18 @@ export class BistroEngine {
       }
     }
 
-    // Ground shadow beneath custom decor/furniture
-    this.ctx.fillStyle = 'rgba(0, 0, 0, 0.24)';
-    this.ctx.beginPath();
-    this.ctx.ellipse(baseCenterX, baseCenterY - 2, 22, 8, 0, 0, Math.PI * 2);
-    this.ctx.fill();
-
-    // Selection indicator if this item is clicked
-    if (this.selectedPlacedItem?.instanceId === placed.instanceId) {
-      this.ctx.save();
-      this.ctx.strokeStyle = '#ffd166';
-      this.ctx.lineWidth = 3;
-      this.ctx.shadowColor = '#ffd166';
-      this.ctx.shadowBlur = 12;
-      this.ctx.beginPath();
-      this.ctx.ellipse(baseCenterX, baseCenterY - 2, 26, 10, 0, 0, Math.PI * 2);
-      this.ctx.stroke();
-      this.ctx.restore();
-    }
-
-    const id = item.id;
-    if (id.includes('bonsai')) {
-      // Ancient Japanese Bonsai
-      this.ctx.fillStyle = '#0f172a';
-      this.ctx.fillRect(baseCenterX - 14, baseCenterY - 6, 28, 6);
-      this.ctx.strokeStyle = '#78350f';
-      this.ctx.lineWidth = 4;
-      this.ctx.beginPath();
-      this.ctx.moveTo(baseCenterX, baseCenterY - 4);
-      this.ctx.quadraticCurveTo(baseCenterX - 8, baseCenterY - 20, baseCenterX - 4, baseCenterY - 30);
-      this.ctx.stroke();
-      this.ctx.fillStyle = id.includes('cherry') ? '#f472b6' : '#15803d';
-      this.ctx.beginPath();
-      this.ctx.arc(baseCenterX - 8, baseCenterY - 30, 11, 0, Math.PI * 2);
-      this.ctx.arc(baseCenterX + 6, baseCenterY - 24, 9, 0, Math.PI * 2);
-      this.ctx.arc(baseCenterX - 1, baseCenterY - 36, 8, 0, Math.PI * 2);
-      this.ctx.fill();
-    } else if (id.includes('jukebox')) {
-      // 1950s Wurlitzer Jukebox
-      this.ctx.fillStyle = '#b91c1c';
-      this.ctx.fillRect(baseCenterX - 14, baseCenterY - 32, 28, 30);
-      this.ctx.beginPath();
-      this.ctx.arc(baseCenterX, baseCenterY - 32, 14, Math.PI, 0);
-      this.ctx.fill();
-      this.ctx.fillStyle = '#fef08a';
-      this.ctx.beginPath();
-      this.ctx.arc(baseCenterX, baseCenterY - 30, 9, Math.PI, 0);
-      this.ctx.fill();
-      this.ctx.strokeStyle = '#38bdf8';
-      this.ctx.lineWidth = 2;
-      this.ctx.strokeRect(baseCenterX - 11, baseCenterY - 18, 22, 14);
-    } else if (id.includes('neon') || id.includes('sign')) {
-      // Glowing Neon Sign
-      this.ctx.strokeStyle = '#475569';
-      this.ctx.lineWidth = 2;
-      this.ctx.beginPath();
-      this.ctx.moveTo(baseCenterX, baseCenterY);
-      this.ctx.lineTo(baseCenterX, baseCenterY - 34);
-      this.ctx.stroke();
-      this.ctx.save();
-      this.ctx.shadowColor = item.color || '#ec4899';
-      this.ctx.shadowBlur = 10;
-      this.ctx.fillStyle = item.color || '#ec4899';
-      this.ctx.fillRect(baseCenterX - 16, baseCenterY - 48, 32, 18);
-      this.ctx.fillStyle = '#ffffff';
-      this.ctx.font = 'bold 8px Inter, sans-serif';
-      this.ctx.textAlign = 'center';
-      this.ctx.fillText('OPEN', baseCenterX, baseCenterY - 36);
-      this.ctx.restore();
-    } else if (id.includes('wine')) {
-      // Tuscan Wine Barrels
-      this.ctx.fillStyle = '#78350f';
-      this.ctx.beginPath();
-      this.ctx.ellipse(baseCenterX - 7, baseCenterY - 8, 9, 12, 0, 0, Math.PI * 2);
-      this.ctx.ellipse(baseCenterX + 7, baseCenterY - 8, 9, 12, 0, 0, Math.PI * 2);
-      this.ctx.ellipse(baseCenterX, baseCenterY - 20, 9, 12, 0, 0, Math.PI * 2);
-      this.ctx.fill();
-      this.ctx.strokeStyle = '#1e293b';
-      this.ctx.lineWidth = 1.5;
-      this.ctx.stroke();
-    } else if (id.includes('arcade')) {
-      // Retro Arcade Cabinet
-      this.ctx.fillStyle = '#1e1b4b';
-      this.ctx.fillRect(baseCenterX - 12, baseCenterY - 36, 24, 34);
-      this.ctx.fillStyle = '#06b6d4';
-      this.ctx.fillRect(baseCenterX - 9, baseCenterY - 30, 18, 12);
-      this.ctx.fillStyle = '#ef4444';
-      this.ctx.fillRect(baseCenterX - 10, baseCenterY - 16, 20, 6);
-    } else if (id.includes('server')) {
-      // Cyber AI Server Tower
-      this.ctx.fillStyle = '#0f172a';
-      this.ctx.fillRect(baseCenterX - 11, baseCenterY - 40, 22, 38);
-      this.ctx.fillStyle = '#06b6d4';
-      for (let sy = baseCenterY - 36; sy < baseCenterY - 8; sy += 7) {
-        this.ctx.fillRect(baseCenterX - 8, sy, 16, 3);
-      }
-    } else if (id.includes('fountain')) {
-      // Tiered Water Fountain
-      this.ctx.fillStyle = id.includes('gold') ? '#f59e0b' : '#cbd5e1';
-      this.ctx.beginPath();
-      this.ctx.ellipse(baseCenterX, baseCenterY - 4, 18, 7, 0, 0, Math.PI * 2);
-      this.ctx.fill();
-      this.ctx.fillStyle = '#38bdf8';
-      this.ctx.beginPath();
-      this.ctx.ellipse(baseCenterX, baseCenterY - 6, 14, 5, 0, 0, Math.PI * 2);
-      this.ctx.fill();
-      this.ctx.fillStyle = id.includes('gold') ? '#d97706' : '#94a3b8';
-      this.ctx.fillRect(baseCenterX - 3, baseCenterY - 20, 6, 14);
-      this.ctx.beginPath();
-      this.ctx.ellipse(baseCenterX, baseCenterY - 20, 9, 4, 0, 0, Math.PI * 2);
-      this.ctx.fill();
-    } else if (id.includes('statue')) {
-      // Classical Marble Statue
-      this.ctx.fillStyle = '#94a3b8';
-      this.ctx.fillRect(baseCenterX - 10, baseCenterY - 10, 20, 8);
-      this.ctx.fillStyle = '#f8fafc';
-      this.ctx.beginPath();
-      this.ctx.arc(baseCenterX, baseCenterY - 34, 6, 0, Math.PI * 2);
-      this.ctx.rect(baseCenterX - 7, baseCenterY - 28, 14, 18);
-      this.ctx.fill();
-    } else if (id.includes('totem')) {
-      // Polynesian Tiki Totem
-      this.ctx.fillStyle = '#78350f';
-      this.ctx.fillRect(baseCenterX - 10, baseCenterY - 38, 20, 36);
-      this.ctx.fillStyle = '#ef4444';
-      this.ctx.fillRect(baseCenterX - 7, baseCenterY - 32, 5, 4);
-      this.ctx.fillRect(baseCenterX + 2, baseCenterY - 32, 5, 4);
-      this.ctx.fillStyle = '#fef08a';
-      this.ctx.fillRect(baseCenterX - 6, baseCenterY - 22, 12, 4);
-    } else if (id.includes('lantern')) {
-      // Japanese Red Chochin Lantern
-      this.ctx.strokeStyle = '#292524';
-      this.ctx.lineWidth = 2;
-      this.ctx.beginPath();
-      this.ctx.moveTo(baseCenterX, baseCenterY);
-      this.ctx.lineTo(baseCenterX, baseCenterY - 38);
-      this.ctx.lineTo(baseCenterX + 6, baseCenterY - 38);
-      this.ctx.stroke();
-      this.ctx.fillStyle = '#dc2626';
-      this.ctx.beginPath();
-      this.ctx.ellipse(baseCenterX + 6, baseCenterY - 26, 7, 10, 0, 0, Math.PI * 2);
-      this.ctx.fill();
-      this.ctx.fillStyle = '#fef08a';
-      this.ctx.fillRect(baseCenterX + 3, baseCenterY - 28, 6, 4);
-    } else if (id.includes('pastry')) {
-      // Glass Bakery Showcase
-      this.ctx.fillStyle = '#5c3a21';
-      this.ctx.fillRect(baseCenterX - 14, baseCenterY - 10, 28, 8);
-      this.ctx.fillStyle = 'rgba(186, 230, 253, 0.7)';
-      this.ctx.strokeStyle = '#0284c7';
-      this.ctx.lineWidth = 1;
-      this.ctx.fillRect(baseCenterX - 12, baseCenterY - 26, 24, 16);
-      this.ctx.strokeRect(baseCenterX - 12, baseCenterY - 26, 24, 16);
-      this.ctx.fillStyle = '#f59e0b';
-      this.ctx.beginPath();
-      this.ctx.arc(baseCenterX - 6, baseCenterY - 14, 3, 0, Math.PI * 2);
-      this.ctx.arc(baseCenterX, baseCenterY - 14, 3, 0, Math.PI * 2);
-      this.ctx.arc(baseCenterX + 6, baseCenterY - 14, 3, 0, Math.PI * 2);
-      this.ctx.fill();
-    } else {
-      // Palm Plant / Generic Decor
+    if (item.type === 'plant') {
       const topY = baseCenterY - 34;
       this.ctx.fillStyle = '#e76f51';
       this.ctx.beginPath();
       this.ctx.moveTo(baseCenterX - 11, baseCenterY - 8);
       this.ctx.lineTo(baseCenterX + 11, baseCenterY - 8);
       this.ctx.lineTo(baseCenterX + 8, baseCenterY + 5);
-      this.ctx.lineTo(-8 + baseCenterX, baseCenterY + 5);
+      this.ctx.lineTo(baseCenterX - 8, baseCenterY + 5);
       this.ctx.closePath();
       this.ctx.fill();
 
-      this.ctx.fillStyle = item.color || '#2a9d8f';
+      this.ctx.fillStyle = '#2a9d8f';
       this.ctx.beginPath();
       this.ctx.arc(baseCenterX, topY + 10, 18, 0, Math.PI * 2);
       this.ctx.fill();
@@ -4790,7 +4494,34 @@ export class BistroEngine {
             return;
           }
 
-          if (this.onDoorInstalled) this.onDoorInstalled('no_item_on_wall');
+          const wallItem = this.placedItems.get(wallKey);
+          if (!wallItem || wallItem.item.pattern !== 'none') {
+            const wPat = (wallItem && wallItem.item && wallItem.item.pattern) || 'sage';
+            const wId = `wall_${wPat}`;
+            const wName = (wallItem && wallItem.item && wallItem.item.name) || 'Sage Painted Wall';
+            const wPrice = 25;
+            const ex = this.inventory.get(wId);
+            if (ex) {
+              ex.quantity += 1;
+              ex.item.originalPrice = wPrice;
+              ex.item.price = wPrice;
+            } else {
+              this.inventory.set(wId, {
+                item: { id: wId, name: wName, type: 'wall', pattern: wPat, price: wPrice, originalPrice: wPrice, color: '#2a9d8f', isWalkable: false },
+                quantity: 1
+              });
+            }
+            this.placedItems.set(wallKey, {
+              instanceId: wallKey,
+              col: side === 'ne' ? index : 0,
+              row: side === 'nw' ? index : 0,
+              item: { id: 'wall_none', name: 'Wall Section', type: 'wall', pattern: 'none', price: 25, removed: true, color: '#000000', isWalkable: false }
+            });
+            this.saveGameState();
+            if (this.onInventoryUpdate) this.onInventoryUpdate(Array.from(this.inventory.values()));
+            if (this.onItemRemoved) this.onItemRemoved('Wall Section');
+            return;
+          }
           return;
         }
 
@@ -4798,7 +4529,7 @@ export class BistroEngine {
         if (this.selectedTool && this.selectedTool.type === 'wall') {
           const isCash = this.selectedTool.currency === 'cash';
           const cost = isCash ? (this.selectedTool.cashPrice || 0) : this.selectedTool.price;
-          const hasFunds = isCash ? (this.cash >= cost) : ((this.coins - cost) >= this.creditLimit);
+          const hasFunds = isCash ? (this.cash >= cost) : (this.coins >= cost);
 
           if (hasFunds) {
             if (isCash) {
@@ -4830,7 +4561,7 @@ export class BistroEngine {
           const tool = this.selectedTool;
           const isFromInv = tool.isFromInventory;
           const toolPrice = isFromInv ? 0 : tool.price;
-          if (isFromInv || (this.coins - toolPrice >= this.creditLimit)) {
+          if (this.coins >= toolPrice) {
             this.coins -= toolPrice;
             if (!isFromInv) this.recordExpense('decorWallpapers', toolPrice);
 
@@ -4905,7 +4636,7 @@ export class BistroEngine {
           const tool = this.selectedTool;
           const isFromInv = tool.isFromInventory;
           const toolPrice = isFromInv ? 0 : tool.price;
-          if (isFromInv || (this.coins - toolPrice >= this.creditLimit)) {
+          if (this.coins >= toolPrice) {
             this.coins -= toolPrice;
             if (!isFromInv) this.recordExpense('decorWallpapers', toolPrice);
 
@@ -5005,7 +4736,7 @@ export class BistroEngine {
         const isFromInv = tool.isFromInventory;
         const isCash = tool.currency === 'cash';
         const toolPrice = isFromInv ? 0 : (isCash ? (tool.cashPrice || 0) : tool.price);
-        const hasFunds = isFromInv || (isCash ? (this.cash >= toolPrice) : ((this.coins - toolPrice) >= this.creditLimit));
+        const hasFunds = isFromInv || (isCash ? (this.cash >= toolPrice) : (this.coins >= toolPrice));
 
         if (hasFunds) {
           if (!isFromInv) {
@@ -5050,18 +4781,44 @@ export class BistroEngine {
       }
 
 
+      // C. Action Tools: Click tool button first, then click any item or floor tile
+      if (this.activeBuildTool === 'remove') {
+        const clickedItem = this.getItemAt(col, row);
+        if (clickedItem && clickedItem.item.type !== 'floor') {
+          this.selectedPlacedItem = clickedItem;
+          this.removeItemToInventory(clickedItem);
+          if (this.onItemRemoved) this.onItemRemoved(clickedItem.item.name);
+          return;
+        }
+
+        const flKey = `floor_${col}_${row}`;
+        const fl = this.placedItems.get(flKey);
+        if (fl) {
+          this.placedItems.delete(flKey);
+          const basePrice = this.getItemBasePrice(fl.item);
+          const existing = this.inventory.get(fl.item.id);
+          if (existing) {
+            existing.quantity += 1;
+            existing.item.originalPrice = basePrice;
+            existing.item.price = basePrice;
+          } else {
+            this.inventory.set(fl.item.id, {
+              item: { ...fl.item, originalPrice: basePrice, price: basePrice },
+              quantity: 1
+            });
+          }
+          this.saveGameState();
+          if (this.onInventoryUpdate) this.onInventoryUpdate(Array.from(this.inventory.values()));
+          if (this.onItemRemoved) this.onItemRemoved(fl.item.name);
+          return;
+        }
+        return;
+      }
+
       const clickedItem = this.getItemAt(col, row);
       if (!clickedItem) {
         this.selectedPlacedItem = null;
         if (this.onSelectedItemChange) this.onSelectedItemChange(null);
-        return;
-      }
-
-      // C. Action Tools: Click tool button first, then click any item on the floor
-      if (this.activeBuildTool === 'remove') {
-        this.selectedPlacedItem = clickedItem;
-        this.removeItemToInventory(clickedItem);
-        if (this.onItemRemoved) this.onItemRemoved(clickedItem.item.name);
         return;
       }
 
@@ -5539,8 +5296,8 @@ export class BistroEngine {
 
   hireStaff(role: StaffRole): { success: boolean; message: string; staff?: Actor } {
     const cost = this.getStaffHireCost(role);
-    if ((this.coins - cost) < this.creditLimit) {
-      return { success: false, message: `Debt limit reached (${this.creditLimit} 🪙)! Need ${cost} 🪙 to hire.` };
+    if (this.coins < cost) {
+      return { success: false, message: `Not enough coins! Need ${cost} 🪙 to hire.` };
     }
 
     const currentStaff = this.getStaffList();

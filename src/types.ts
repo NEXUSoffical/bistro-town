@@ -11,13 +11,13 @@ export interface FurnitureItem {
   color: string;
   accentColor?: string;
   pattern?: string;
-  theme?: string;
   originalPrice?: number;
   isFromInventory?: boolean;
   isWalkable: boolean;
   isInteractive?: boolean;
   flipX?: boolean;
   rotation?: number; // 0 = default, 90, 180, 270
+  removed?: boolean;
 }
 
 export interface PlacedItem {
