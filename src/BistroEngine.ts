@@ -10,12 +10,13 @@ import { BistroCloudSave } from './BistroCloudSave';
 
 export const EXPANSION_TIERS: ExpansionTier[] = [
   { size: 6, name: 'Starter Diner', minLevel: 1, cost: 0 },
-  { size: 7, name: 'Cozy Bistro', minLevel: 3, cost: 850 },
-  { size: 8, name: 'Neighborhood Cafe', minLevel: 5, cost: 2500 },
-  { size: 9, name: 'Corner Brasserie', minLevel: 8, cost: 7000 },
-  { size: 10, name: 'City Plaza Restaurant', minLevel: 12, cost: 18000 },
-  { size: 11, name: 'Grand Dining Hall', minLevel: 16, cost: 45000 },
-  { size: 12, name: 'Imperial Luxury Palace', minLevel: 20, cost: 120000 }
+  { size: 12, name: 'Grand Bistro', minLevel: 3, cost: 10000 },
+  { size: 18, name: 'Plaza Estate', minLevel: 6, cost: 20000 },
+  { size: 24, name: 'Palace Dining Hall', minLevel: 10, cost: 40000 },
+  { size: 30, name: 'Imperial Resort', minLevel: 15, cost: 80000 },
+  { size: 36, name: 'Metropolitan Pavilion', minLevel: 20, cost: 160000 },
+  { size: 42, name: 'Continental Megaplex', minLevel: 25, cost: 320000 },
+  { size: 48, name: 'World Culinary Empire', minLevel: 30, cost: 640000 }
 ];
 
 export const INGREDIENT_CATALOG: Record<IngredientId, IngredientInfo> = {
@@ -1234,7 +1235,7 @@ export class BistroEngine {
   }
 
   setZoom(newZoom: number) {
-    this.zoom = Math.max(0.6, Math.min(1.6, Math.round(newZoom * 100) / 100));
+    this.zoom = Math.max(0.35, Math.min(1.6, Math.round(newZoom * 100) / 100));
     if (this.onZoomChange) {
       this.onZoomChange(this.zoom);
     }
@@ -2435,19 +2436,20 @@ export class BistroEngine {
 
   // Restaurant Expansion System (Unlock a bigger restaurant over time)
   getNextExpansion(): ExpansionTier | null {
-    return EXPANSION_TIERS.find(t => t.size === this.gridSize + 1) || null;
+    return EXPANSION_TIERS.find(t => t.size > this.gridSize) || null;
   }
 
   canExpand(): { can: boolean; reason?: string; nextTier?: ExpansionTier } {
     const nextTier = this.getNextExpansion();
     if (!nextTier) {
-      return { can: false, reason: 'Max restaurant size reached (12×12)!' };
+      const maxTier = EXPANSION_TIERS[EXPANSION_TIERS.length - 1];
+      return { can: false, reason: `Max restaurant size reached (${maxTier.size}×${maxTier.size})!` };
     }
     if (this.level < nextTier.minLevel) {
       return { can: false, reason: `Requires Level ${nextTier.minLevel}! (Currently Lv. ${this.level})`, nextTier };
     }
     if (this.coins < nextTier.cost) {
-      return { can: false, reason: `Requires ${nextTier.cost} 🪙! (Need ${nextTier.cost - this.coins} more)`, nextTier };
+      return { can: false, reason: `Requires ${nextTier.cost.toLocaleString()} 🪙! (Need ${(nextTier.cost - this.coins).toLocaleString()} more)`, nextTier };
     }
     return { can: true, nextTier };
   }

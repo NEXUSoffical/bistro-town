@@ -359,11 +359,11 @@ window.addEventListener('DOMContentLoaded', () => {
 
     const check = engine.canExpand();
     if (check.can) {
-      btnExpandBistro.innerHTML = `✨ <b>Expand</b> <span class="expand-badge">${nextTier.cost.toLocaleString()} 🪙</span>`;
+      btnExpandBistro.innerHTML = `✨ <b>Expand (${nextTier.size}×${nextTier.size})</b> <span class="expand-badge">${nextTier.cost.toLocaleString()} 🪙</span>`;
       btnExpandBistro.classList.remove('locked');
       btnExpandBistro.classList.add('ready');
     } else {
-      btnExpandBistro.innerHTML = `🔒 <b>Expand</b> <span class="expand-badge">Lv. ${nextTier.minLevel} · ${nextTier.cost.toLocaleString()} 🪙</span>`;
+      btnExpandBistro.innerHTML = `🔒 <b>Expand (${nextTier.size}×${nextTier.size})</b> <span class="expand-badge">Lv. ${nextTier.minLevel} · ${nextTier.cost.toLocaleString()} 🪙</span>`;
       btnExpandBistro.classList.remove('ready');
       btnExpandBistro.classList.add('locked');
     }
